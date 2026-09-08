@@ -6,6 +6,7 @@ import type { SessionFilters } from '@/utils/sessionFilters'
 import { applySessionFilters, hasActiveFilters } from '@/utils/sessionFilters'
 import { formatDateEs, formatDifficultyLabel, formatDurationEs } from '@/utils/normalize'
 import { formatExerciseLabel } from '@/utils/labels'
+import { estimateCafeteroStars } from '@/utils/estimatedStars'
 
 interface GenerateParams {
   profile: ConsolidatedProfile
@@ -14,6 +15,12 @@ interface GenerateParams {
 }
 
 const SEAM_TEAL: [number, number, number] = [22, 138, 128]
+
+function formatStarsForReport(s: { game: string; stars: number | null; score: number | null; exercise: string | null }): string {
+  if (s.stars !== null) return '★'.repeat(s.stars)
+  const estimated = s.game === 'game3' ? estimateCafeteroStars(s.score, s.exercise) : null
+  return estimated === null ? 'No aplica' : `${'★'.repeat(estimated)} (estimado)`
+}
 
 export function generatePatientReportPdf({ profile, filters, generatedByEmail }: GenerateParams): void {
   const doc = new jsPDF({ unit: 'pt', format: 'a4' })
@@ -112,7 +119,7 @@ export function generatePatientReportPdf({ profile, filters, generatedByEmail }:
         formatExerciseLabel(s.exercise),
         formatDifficultyLabel(s.difficulty),
         s.score === null ? 'No disponible' : String(s.score),
-        s.stars === null ? 'No aplica' : '★'.repeat(s.stars),
+        formatStarsForReport(s),
         formatDurationEs(s.durationSeconds),
       ]),
       styles: { fontSize: 8.5, cellPadding: 5 },

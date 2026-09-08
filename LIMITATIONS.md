@@ -20,7 +20,27 @@ No hay presupuesto para Cloud Functions (requieren plan Blaze incluso con uso $0
 
 No se mostrará ninguna métrica que mezcle `score` entre juegos (escalas incompatibles, ver `DATA_MAPPING.md` sección 7), ni ninguna interpretación clínica/diagnóstica de los datos de fisioterapia — el prompt lo prohíbe explícitamente (sección 21).
 
-**Estrellas en Cafetero — confirmado que no son calculables, no solo "no observadas".** El cliente compartió el código fuente real de guardado de puntajes de los 3 juegos. El de Cafetero (`ScoreController.cs`) nunca calcula ni escribe una estrella — se verificó línea por línea. El de Amazonas/Cartagena (`BaseExercise.cs`, clase base compartida) sí la calcula con `CalculateStars(score)`: 3 si `score>=66`, 2 si `score>=33`, 1 en otro caso — fórmula validada matemáticamente contra las 68 entradas reales con score+stars de esos dos juegos, 0 discrepancias. Esa fórmula es específica de esos dos juegos (comparten la misma clase base) y no aplica a Cafetero, que además tiene 5 minijuegos con escalas de puntaje incompatibles entre sí. El portal muestra "No aplica" (con una explicación al pasar el cursor) en vez de un guion vacío o una estrella inventada.
+**Estrellas en Cafetero — no existen en el dato real, pero el cliente pidió explícitamente mostrar una estimación visual de todos modos.** El cliente compartió el código fuente real de guardado de puntajes de los 3 juegos. El de Cafetero (`ScoreController.cs`) nunca calcula ni escribe una estrella — se verificó línea por línea. El de Amazonas/Cartagena (`BaseExercise.cs`, clase base compartida) sí la calcula con `CalculateStars(score)`: 3 si `score>=66`, 2 si `score>=33`, 1 en otro caso — fórmula validada matemáticamente contra las 68 entradas reales con score+stars de esos dos juegos, 0 discrepancias.
+
+Como Cafetero no tiene esa fórmula y sus 5 minijuegos **se calculan de forma distinta dentro del propio juego** (escalas de puntaje incompatibles entre sí, ver `DATA_MAPPING.md` sección 3), se implementó `estimateCafeteroStars()` (`src/utils/estimatedStars.ts`): normaliza el puntaje como porcentaje de una referencia **específica de cada minijuego** — nunca una escala compartida ni comparada contra otro minijuego — y aplica las mismas bandas 66%/33% que sí están confirmadas por código para Amazonas/Cartagena.
+
+La referencia por minijuego se calculó con el **percentil 90 real** de cada uno (no el máximo absoluto — un solo valor atípico penalizaría a todos los demás jugadores), sobre el export completo de producción (2026-09-08):
+
+| Minijuego | p90 real | Referencia usada | Naturaleza del dato real |
+|---|---|---|---|
+| `CoffeeWash` | 100 | 100 | Binario: el dato real solo registra 0 o 100 |
+| `CoffeeElaboration` | 1000 | 1000 | Binario: el dato real solo registra 0 o 1000 |
+| `CoffeeTransportation` | 1000 | 1000 | Binario: el dato real solo registra 0 o 1000 |
+| `CoffeeCollection` | 2940 | 3000 | Puntaje continuo |
+| `CoffeeClassification` | 2488 | 2500 | Puntaje continuo |
+
+Para los 3 minijuegos "binarios", 2 estrellas queda casi sin uso en la práctica (0-1% de las partidas reales) — es la forma real de esos datos (nunca hay un valor intermedio registrado), no un defecto de la fórmula. Verificado con la distribución completa de estrellas resultante contra las ~300 sesiones reales de Cafetero antes de aceptar la referencia.
+
+Esto es una **estimación de la capa de presentación, no un dato real**:
+- Nunca se escribe en Firebase — vive solo en el navegador al momento de mostrar la tabla o generar el PDF.
+- El campo `stars` de `NormalizedSession` (la fuente de verdad, cubierta por pruebas unitarias) sigue siendo `null` para Cafetero, exactamente como en los datos reales — la estimación se calcula aparte, en el componente de presentación (`SessionsTable.tsx`) y en el reporte PDF, nunca en el adapter ni en la normalización.
+- Se muestra visualmente distinta a una estrella real: color ámbar en vez de negro, con la etiqueta "estimado" debajo (y "(estimado)" en el PDF, que no tiene tooltips) — para que el personal de SEAM nunca la confunda con un dato registrado por el juego.
+- Si el puntaje o el nombre del minijuego no se reconocen, no se muestra ninguna estrella inventada (`No aplica`), en vez de adivinar.
 
 ## 5. Generación de PDF
 
