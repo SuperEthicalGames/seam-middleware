@@ -11,15 +11,25 @@ const userWithActivity: G3User = {
 }
 
 describe('normalizeG3User', () => {
-  it('usa CC (no cedula) como identificador', () => {
+  it('usa CC como identificador cuando está presente', () => {
     const user = normalizeG3User('uid1', userWithActivity)
     expect(user?.identifier).toBe('900000003')
     expect(user?.hasActivity).toBe(true)
   })
 
-  it('devuelve null si falta CC', () => {
-    // @ts-expect-error entrada inválida deliberada
-    expect(normalizeG3User('uid2', {})).toBeNull()
+  it('usa cedula como fallback cuando falta CC (caso real observado en export de producción)', () => {
+    const user = normalizeG3User('uid2', { cedula: '900000005' })
+    expect(user?.identifier).toBe('900000005')
+  })
+
+  it('prioriza CC sobre cedula si ambos están presentes (caso real observado)', () => {
+    const user = normalizeG3User('uid3', { CC: '111', cedula: '222' })
+    expect(user?.identifier).toBe('111')
+  })
+
+  it('devuelve null si no hay CC ni cedula (no inventa un identificador)', () => {
+    expect(normalizeG3User('uid4', {})).toBeNull()
+    expect(normalizeG3User('uid5', null)).toBeNull()
   })
 })
 

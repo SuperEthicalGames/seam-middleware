@@ -47,7 +47,11 @@ export interface G3ResultEntry {
 }
 
 export interface G3User {
-  CC: string
+  CC?: string
+  // Se observó al menos un registro real con ambos campos (`CC` y `cedula`) presentes
+  // a la vez, y `CC` es el campo dominante en el resto del dataset — pero su ausencia
+  // ocasional es real, no hipotética, así que se modela como opcional con fallback.
+  cedula?: string
   results?: Record<string, G3ResultEntry> // gameNN -> entry (log plano, sin agregación por dificultad)
 }
 

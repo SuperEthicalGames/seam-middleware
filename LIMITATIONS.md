@@ -27,13 +27,17 @@ Se usará una librería open-source 100% cliente (sin servicio externo) — a co
 ## 6. Pendiente de definir con el cliente
 
 - Logo SEAM: no se recibió ningún archivo de logo. Se usará un wordmark tipográfico "SEAM" como placeholder hasta recibir el archivo real.
-- Nombres comerciales de los juegos: no confirmados; se usan los nombres provisionales `Juego 1`, `Juego 2 — Cartagena`, `Juego 3` tal como indica la sección 56 del prompt.
+- ~~Nombres comerciales de los juegos: no confirmados~~ — **Resuelto.** El cliente proporcionó los `google-services.json` de las tres apps; el `android_client_info.package_name` de cada uno confirma los nombres reales: **Amazonas** (`seam-data-as`), **Cartagena** (`seam-data-cartagena`), **Cafetero** (`seam-data-game`). Actualizado en `src/config/games.ts`.
 
 ## 7. Búsqueda por cédula/CC: filtrado en cliente, no query indexada
 
 Verificado en pruebas contra las bases reales: Firebase RTDB **rechaza con un error duro** (`Index not defined, add ".indexOn": "cedula"...`) cualquier `orderByChild` sobre un campo sin índice declarado en las Rules — no es solo una advertencia de rendimiento como podría suponerse. Como las Rules reales de los tres juegos no declaran `.indexOn` para `cedula`/`CC` (sección 5 del prompt: no se modifican las Rules de los juegos), `findUserByIdentifier` en los tres adapters descarga `users` completo (ya se hacía en `getUsers()`, dataset de 9 a 18 registros por juego) y filtra en JavaScript. Es correcto y rápido a esta escala; si el número de usuarios por juego creciera a miles, este sería el punto a revisar (paginación o, coordinando con el equipo de Unity, añadir el índice correspondiente a las Rules del juego).
 
-## 8. Pruebas realizadas contra las tres Firebase reales y la Firebase central
+## 8. Inconsistencia real de campo en Game 3 (`CC` vs `cedula`)
+
+Al recibir el export completo de `seam-data-game` (no solo la muestra inicial) se encontró un usuario con **ambos** campos `CC` y `cedula` presentes simultáneamente con el mismo valor — el único caso de 18 usuarios. `normalizeG3User` ahora usa `CC` como principal y cae a `cedula` únicamente si `CC` no existe, para no perder ese identificador sin inventar nada (`src/adapters/g3Normalize.ts`). No se encontró ningún usuario con **solo** `cedula` y sin `CC` en el export recibido, pero el fallback queda listo por si aparece en el futuro.
+
+## 9. Pruebas realizadas contra las tres Firebase reales y la Firebase central
 
 Antes de considerar el MVP funcional se verificó en un navegador real, contra los datos en producción (sin escribir nunca en `users`, `identificators`, `record` ni `results`):
 

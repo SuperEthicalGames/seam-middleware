@@ -77,9 +77,9 @@ Cuatro proyectos Firebase, cuatro clientes independientes — nunca se mezclan i
 | Proyecto | Uso desde el portal |
 |---|---|
 | `seam-middleware` | Auth (login) + RTDB central (`admins`, `audit`, `settings`) |
-| `seam-data-as` (Juego 1) | Solo lectura + escritura puntual en `serials/{code}` |
-| `seam-data-cartagena` (Juego 2) | Igual que Juego 1 |
-| `seam-data-game` (Juego 3) | Igual que Juego 1 |
+| `seam-data-as` ("Amazonas") | Solo lectura + escritura puntual en `serials/{code}` |
+| `seam-data-cartagena` ("Cartagena") | Igual que Amazonas |
+| `seam-data-game` ("Cafetero") | Igual que Amazonas |
 
 Reglas de la base central en `database.rules.json` — publícalas con `firebase deploy --only database`. **Las Rules de los tres juegos no se tocan** (ver `LIMITATIONS.md`, sección de seguridad).
 

@@ -4,11 +4,16 @@ import { normalizeDifficulty, parseDdMmYyyy, parseDurationToSeconds } from '@/ut
 /** Normalización propia de Game 3 — ver DATA_MAPPING.md, forma distinta a G1/G2. */
 
 export function normalizeG3User(uid: string, raw: G3User | null): NormalizedUser | null {
-  if (!raw || typeof raw.CC !== 'string') return null
+  if (!raw) return null
+  // `CC` es el campo dominante en Game 3, pero se verificó al menos un registro real
+  // con `cedula` en vez de (o además de) `CC` — se usa como fallback, nunca se inventa
+  // un identificador si ninguno de los dos existe.
+  const identifier = raw.CC ?? raw.cedula
+  if (typeof identifier !== 'string') return null
   return {
     game: 'game3',
     uid,
-    identifier: raw.CC,
+    identifier,
     hasActivity: Boolean(raw.results),
   }
 }

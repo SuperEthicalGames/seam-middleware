@@ -12,9 +12,11 @@ No se recibieron archivos JSON exportados en el directorio de trabajo (`D:\Portf
 
 Se hicieron únicamente peticiones `GET` (nunca `PUT`/`PATCH`/`DELETE`). Se usó `?shallow=true` para enumerar claves sin descargar todo el árbol, y se leyeron muestras puntuales (5 usuarios por juego + varios `identificators`/`serials`) para inferir la forma real de los datos. **El nodo raíz (`/`) devuelve `Permission denied`** en los tres proyectos — solo los tres subnodos con regla explícita son legibles. Esto confirma, con evidencia directa, que los tres root nodes reales son exactamente `identificators`, `serials`, `users` — no hay otros nodos accesibles.
 
+**Actualización (misma fecha):** el cliente proporcionó posteriormente los tres exports completos (`seam-data-*-default-rtdb-export.json`) y los `google-services.json` de las tres apps Android. Se usaron para: (1) confirmar contra el 100% de los datos —no solo la muestra— que la estructura documentada abajo es correcta y no hay campos adicionales; y (2) obtener los nombres comerciales reales de cada app a partir del `android_client_info.package_name` de cada `google-services.json`: `com.agencycic.amazonas` (Juego 1), `com.agencycic.cartagena` (Juego 2), `com.agencycic.cafetero` (Juego 3). El portal ahora usa **Amazonas**, **Cartagena** y **Cafetero** como nombres visibles en vez de los placeholders "Juego 1/2/3".
+
 ---
 
-## 1. GAME 1 — `seam-data-as` (Juego 1)
+## 1. GAME 1 — `seam-data-as` ("Amazonas")
 
 Escala observada: 15 `users`, 25 `identificators`, 25 `serials`.
 
@@ -44,7 +46,7 @@ Valor: **number**, `0` o `1` (no booleano). 25/25 claves observadas devuelven `0
 
 ---
 
-## 2. GAME 2 — `seam-data-cartagena` (Juego 2 — Cartagena)
+## 2. GAME 2 — `seam-data-cartagena` ("Cartagena")
 
 Escala observada: 9 `users`, 15 `identificators`, 15 `serials`.
 
@@ -58,14 +60,15 @@ Estructura **idéntica** a Game 1 (`cedula`, `record.gameNN`, `results.<experien
 
 ---
 
-## 3. GAME 3 — `seam-data-game` (Juego 3 — temática "Coffee")
+## 3. GAME 3 — `seam-data-game` ("Cafetero")
 
 Escala observada: 18 `users`, **1** `identificators`, **1** `serials`.
 
 ### `users/{firebaseUid}`
 | Campo | Tipo | Presente | Ejemplo | Notas |
 |---|---|---|---|---|
-| `CC` | string | siempre | `"1005XXXXXX"` (real, enmascarado), `"1"`, `"77"` | **Nombre de campo distinto a Game 1/2** (`CC`, no `cedula`). Igual de "sucio": valores de 1–10 dígitos. |
+| `CC` | string | casi siempre | `"1005XXXXXX"` (real, enmascarado), `"1"`, `"77"` | **Nombre de campo distinto a Game 1/2** (`CC`, no `cedula`). Igual de "sucio": valores de 1–10 dígitos. |
+| `cedula` | string | **1 registro real** (export completo, no la muestra inicial) | ver hallazgo abajo | Confirmado en el export completo: un usuario tiene `CC` **y** `cedula` con el mismo valor a la vez. El adapter usa `CC` como principal y `cedula` como fallback si `CC` faltara. |
 | `results` | object, opcional | solo si jugó | `results.game01`, `results.game02`, … | Aquí `results` **es** el log cronológico plano (no hay agregación por dificultad como en Game 1/2, y no existe un nodo `record` separado). Puede crecer mucho: se observó un usuario con **79 entradas** (`game01`…`game79`). |
 | `results.gameNN.date` | string | — | `"22/04/2025"` | `DD/MM/YYYY`, igual que G1/G2. |
 | `results.gameNN.hour` | string | **opcional** | `"12:44:33"` | Ausente en varias entradas (p. ej. las primeras 21 partidas de un usuario no tienen `hour`). |
