@@ -5,6 +5,7 @@ import { GAME_CATALOG } from '@/config/games'
 import { Card } from '@/components/Card'
 import { Badge } from '@/components/Badge'
 import { ErrorState, TableSkeleton } from '@/components/States'
+import { GAME_COLORS } from '@/charts/palette'
 
 export function GamesList() {
   const { data, loading, error, reload } = useAsync(() => loadGamesOverview(), [])
@@ -28,9 +29,12 @@ export function GamesList() {
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
       {data.map((g) => (
-        <Card key={g.game}>
+        <Card key={g.game} className="transition-all duration-150 hover:-translate-y-0.5 hover:shadow-md">
           <div className="flex items-center justify-between">
-            <h3 className="text-base font-semibold text-ink-900">{GAME_CATALOG[g.game].displayName}</h3>
+            <div className="flex items-center gap-2.5">
+              <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: GAME_COLORS[g.game] }} aria-hidden="true" />
+              <h3 className="text-base font-semibold text-ink-900">{GAME_CATALOG[g.game].displayName}</h3>
+            </div>
             <Badge tone={g.state === 'ok' ? 'success' : 'danger'}>{g.state === 'ok' ? 'Conectado' : 'Error'}</Badge>
           </div>
 

@@ -78,7 +78,7 @@ export function DataTable<T>({
               {columns.map((col) => (
                 <th
                   key={col.key}
-                  className={`px-4 py-3 font-medium ${col.sortValue ? 'cursor-pointer select-none' : ''} ${col.className ?? ''}`}
+                  className={`px-4 py-3 font-medium ${col.sortValue ? 'cursor-pointer select-none transition-colors hover:text-ink-800' : ''} ${col.className ?? ''}`}
                   onClick={() => toggleSort(col)}
                 >
                   <span className="inline-flex items-center gap-1">
@@ -91,7 +91,7 @@ export function DataTable<T>({
           </thead>
           <tbody className="divide-y divide-ink-100">
             {pageRows.map((row) => (
-              <tr key={rowKey(row)} className="hover:bg-ink-50/60">
+              <tr key={rowKey(row)} className="transition-colors duration-100 hover:bg-ink-50/60">
                 {columns.map((col) => (
                   <td key={col.key} className={`px-4 py-3 text-ink-700 ${col.className ?? ''}`}>
                     {col.render(row)}

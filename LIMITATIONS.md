@@ -28,7 +28,7 @@ Se usará una librería open-source 100% cliente (sin servicio externo) — a co
 
 ## 6. Pendiente de definir con el cliente
 
-- Logo SEAM: no se recibió ningún archivo de logo. Se usará un wordmark tipográfico "SEAM" como placeholder hasta recibir el archivo real.
+- ~~Logo SEAM: no se recibió ningún archivo de logo~~ — **Resuelto.** El cliente entregó el logo oficial; ver sección 12.
 - ~~Nombres comerciales de los juegos: no confirmados~~ — **Resuelto.** El cliente proporcionó los `google-services.json` de las tres apps; el `android_client_info.package_name` de cada uno confirma los nombres reales: **Amazonas** (`seam-data-as`), **Cartagena** (`seam-data-cartagena`), **Cafetero** (`seam-data-game`). Actualizado en `src/config/games.ts`.
 
 ## 7. Búsqueda por cédula/CC: filtrado en cliente, no query indexada
@@ -53,7 +53,19 @@ Antes de considerar el MVP funcional se verificó en un navegador real, contra l
 
 **No se probó en vivo** (deliberadamente, para no modificar datos de producción sin autorización explícita): la escritura real de `serials` y su registro en auditoría, el flujo completo de creación de la primera cuenta admin (requiere acceso a Firebase Console del cliente), y la entrega del correo de recuperación de contraseña. La lógica de estas tres rutas se revisó por código y sigue el mismo patrón ya validado (mismo `update()` usado y verificado para lectura, mismo `AuthService` de Firebase).
 
-## 10. Pase de UX/rendimiento y bug real encontrado
+## 10. ACCIÓN REQUERIDA — Rules de la base central sin publicar
+
+Al probar el portal con una sesión real ya autenticada (creada por el cliente en Firebase Console) se detectó `Permission denied` incluso en operaciones que las Rules de `database.rules.json` sí permiten (un usuario autenticado escribiendo su propio perfil en `admins/{su-uid}`). Esto confirma que **las Rules nunca se publicaron en el proyecto real** `seam-middleware` — siguen siendo las restrictivas por defecto de una Realtime Database recién creada. El código del portal está correcto; falta este paso de configuración.
+
+**Efecto mientras no se publiquen:** el perfil del admin no se guarda (se ve "Administrador" genérico en vez del nombre real), y los módulos Administradores/Auditoría no funcionan.
+
+**Solución (2 minutos, sin necesidad de la CLI de Firebase):**
+1. Ir a [Firebase Console](https://console.firebase.google.com/) → proyecto `seam-middleware` → **Realtime Database** → pestaña **Reglas**.
+2. Reemplazar el contenido por el de `database.rules.json` (raíz de este repositorio).
+3. Clic en **Publicar**.
+4. Recargar el portal e iniciar sesión de nuevo — el perfil se creará automáticamente en ese primer login posterior a la publicación.
+
+## 11. Pase de UX/rendimiento y bug real encontrado
 
 A petición del cliente se hizo un pase de mejora de experiencia de usuario:
 
@@ -62,3 +74,16 @@ A petición del cliente se hizo un pase de mejora de experiencia de usuario:
 - **A prueba de bugs**: se agregó un `ErrorBoundary` global (`src/components/ErrorBoundary.tsx`) — antes, un error de render en cualquier componente dejaba la pantalla completamente en blanco sin ningún mensaje.
 - **Bug real encontrado y corregido durante la prueba responsive**: el ícono de navegación del sidebar usaba la clase `h-4.5 w-4.5`, que **no existe en la escala por defecto de Tailwind** (no genera ninguna regla CSS), así que los íconos se renderizaban sin tamaño controlado — invisibles a la escala de captura de pantalla usada en las pruebas anteriores, pero gigantes y con scroll horizontal roto en viewport de tablet real (768px). Corregido a `h-5 w-5`. Se auditó el resto del proyecto por el mismo tipo de error (valores `.5` fuera de la escala de Tailwind) y no se encontraron más casos.
 - Verificado visualmente en desktop, tablet (768px) y mobile (375px, incluyendo el menú hamburguesa) contra los datos reales.
+
+## 12. Rediseño de marca con el logo real
+
+El cliente entregó el logo oficial (corazón + wordmark "SEAM" + tagline "Cuidamos lo mejor de ti"). Cambios aplicados:
+
+- **Color de marca exacto**: se tomó una muestra de píxel directa del archivo (`#00b398`) y se reconstruyó toda la escala `seam-*` de Tailwind alrededor de ese valor exacto (antes era un teal aproximado a mano).
+- **Activos optimizados**: se recortó el ícono de corazón por separado del lockup completo (para uso compacto en sidebar/header) y se generaron ambos en WebP — el PNG original pesaba 1.1 MB; los activos finales en `public/` pesan ~48 KB en total (favicon PNG + 2 WebP).
+- **Favicon real** en la pestaña del navegador (antes era un cuadrado genérico con una "S").
+- **Login rediseñado** con layout de dos paneles (marca a la izquierda con el logo completo, formulario a la derecha) — antes era una tarjeta centrada genérica. En mobile se colapsa a un solo panel con el ícono compacto.
+- **Fuente tipográfica real**: "Inter" estaba referenciada en Tailwind desde el inicio pero nunca se cargaba (faltaba el `<link>` de Google Fonts) — toda la aplicación se veía con la fuente del sistema operativo sin que se notara a simple vista. Corregido.
+- **Transiciones**: entrada suave de página al navegar, modales con fade+scale, toasts con slide-in y botón de cierre manual, drawer móvil deslizante, skeletons con efecto shimmer en vez de solo parpadeo de opacidad, estados hover con leve elevación en tarjetas clicables (ej. tarjetas de Juegos).
+- **Scroll se reinicia** al cambiar de página (antes conservaba la posición de la página anterior).
+- Verificado en una sesión real autenticada (no solo con el bypass de prueba) navegando por Dashboard, Juegos, Perfil consolidado y Seriales.

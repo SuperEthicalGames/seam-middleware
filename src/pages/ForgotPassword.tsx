@@ -1,9 +1,10 @@
 import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '@/auth/AuthContext'
-import { Logo } from '@/components/Logo'
+import { usePageTitle } from '@/hooks/usePageTitle'
 
 export function ForgotPassword() {
+  usePageTitle('Recuperar contraseña')
   const { resetPassword } = useAuth()
   const [email, setEmail] = useState('')
   const [sent, setSent] = useState(false)
@@ -26,16 +27,16 @@ export function ForgotPassword() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-ink-50 px-4">
-      <div className="w-full max-w-sm">
+      <div className="w-full max-w-sm animate-fade-in-up">
         <div className="mb-8 flex justify-center">
-          <Logo size="lg" />
+          <img src="/seam-heart.webp" alt="SEAM" className="h-16 w-16 rounded-2xl shadow-md" />
         </div>
         <div className="card p-7">
           <h1 className="mb-1 text-lg font-semibold text-ink-900">Recuperar contraseña</h1>
           <p className="mb-6 text-sm text-ink-500">Enviaremos un enlace de restablecimiento a su correo.</p>
 
           {sent ? (
-            <div className="rounded-lg border border-seam-200 bg-seam-50 px-3 py-3 text-sm text-seam-800">
+            <div role="status" className="animate-fade-in-up rounded-lg border border-seam-200 bg-seam-50 px-3 py-3 text-sm text-seam-900">
               Si el correo está registrado, recibirá un enlace para restablecer su contraseña en unos minutos.
             </div>
           ) : (
@@ -55,7 +56,7 @@ export function ForgotPassword() {
                 />
               </div>
               {error && (
-                <div role="alert" className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                <div role="alert" className="animate-fade-in-up rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
                   {error}
                 </div>
               )}
@@ -65,7 +66,7 @@ export function ForgotPassword() {
             </form>
           )}
 
-          <Link to="/login" className="mt-5 block text-center text-sm font-medium text-seam-600 hover:underline">
+          <Link to="/login" className="mt-5 block text-center text-sm font-medium text-seam-700 hover:text-seam-800 hover:underline">
             Volver a inicio de sesión
           </Link>
         </div>

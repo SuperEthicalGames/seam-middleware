@@ -16,22 +16,22 @@
 
 @layer components {
   .btn {
-    @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors disabled:opacity-50 disabled:pointer-events-none;
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all duration-150 active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none disabled:active:scale-100;
   }
   .btn-primary {
-    @apply btn bg-seam-600 text-white hover:bg-seam-700;
+    @apply btn bg-seam-600 text-white shadow-sm hover:bg-seam-700 hover:shadow;
   }
   .btn-secondary {
-    @apply btn bg-white text-ink-700 border border-ink-200 hover:bg-ink-50;
+    @apply btn border border-ink-200 bg-white text-ink-700 hover:border-ink-300 hover:bg-ink-50;
   }
   .btn-danger {
-    @apply btn bg-red-600 text-white hover:bg-red-700;
+    @apply btn bg-red-600 text-white shadow-sm hover:bg-red-700;
   }
   .card {
-    @apply rounded-xl border border-ink-200 bg-white shadow-card;
+    @apply rounded-xl border border-ink-200 bg-white shadow-card transition-shadow duration-200;
   }
   .input {
-    @apply w-full rounded-lg border border-ink-200 bg-white px-3 py-2 text-sm text-ink-900 placeholder:text-ink-400 focus-visible:border-seam-500;
+    @apply w-full rounded-lg border border-ink-200 bg-white px-3 py-2 text-sm text-ink-900 outline-none transition-colors duration-150 placeholder:text-ink-400 focus:border-seam-500 focus-visible:border-seam-500;
   }
   .label {
     @apply mb-1.5 block text-sm font-medium text-ink-700;

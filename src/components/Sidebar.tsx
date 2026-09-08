@@ -70,7 +70,7 @@ const NAV_ITEMS: NavItem[] = [
 export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   return (
     <>
-      <nav className="flex-1 space-y-1 overflow-y-auto p-3">
+      <nav className="flex-1 space-y-0.5 overflow-y-auto p-3">
         {NAV_ITEMS.map((item) => (
           <NavLink
             key={item.to}
@@ -78,13 +78,25 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
             end={item.to === '/'}
             onClick={onNavigate}
             className={({ isActive }) =>
-              `flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
-                isActive ? 'bg-seam-50 text-seam-700' : 'text-ink-600 hover:bg-ink-50 hover:text-ink-900'
+              `group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-150 ${
+                isActive ? 'bg-seam-50 text-seam-800' : 'text-ink-500 hover:bg-ink-50 hover:text-ink-900'
               }`
             }
           >
-            <item.icon className="h-5 w-5 shrink-0" />
-            {item.label}
+            {({ isActive }) => (
+              <>
+                <span
+                  className={`absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-full bg-seam-600 transition-all duration-150 ${
+                    isActive ? 'opacity-100' : 'opacity-0'
+                  }`}
+                  aria-hidden="true"
+                />
+                <item.icon
+                  className={`h-5 w-5 shrink-0 transition-colors duration-150 ${isActive ? 'text-seam-600' : 'text-ink-400 group-hover:text-ink-600'}`}
+                />
+                {item.label}
+              </>
+            )}
           </NavLink>
         ))}
       </nav>
