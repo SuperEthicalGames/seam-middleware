@@ -85,6 +85,10 @@ Al probar el portal con una sesión real ya autenticada (creada por el cliente e
 3. Clic en **Publicar**.
 4. Recargar el portal e iniciar sesión de nuevo — el perfil se creará automáticamente en ese primer login posterior a la publicación.
 
+**Bug real que causó esto y ya se corrigió:** activar/desactivar un serial mostraba "No fue posible consultar la información..." como si la operación hubiera fallado por completo, aunque el serial **sí se activaba/desactivaba correctamente** en la base del juego correspondiente — solo el registro de auditoría (que sí depende de estas Rules) era el que fallaba. `toggleSerial()` esperaba ambas escrituras con un solo `await` seguido, así que el error de auditoría hacía que toda la función lanzara una excepción y el portal reportara un fallo total sobre un cambio que ya se había aplicado. Riesgo real: un admin podía reintentar creyendo que no pasó nada y terminar alternando el estado sin darse cuenta.
+
+Corregido en `src/services/SerialService.ts`: la escritura del serial (operación principal) y el registro de auditoría (secundario) ahora son independientes. Si la escritura del serial falla, se reporta como error real (como antes). Si la escritura del serial tiene éxito pero la auditoría falla, el portal muestra éxito con una aclaración aparte ("...pero no se pudo registrar en la auditoría") en vez de un error genérico que hace parecer que nada se guardó. Verificado en vivo con la sesión real: se activó/desactivó un serial de Amazonas dos veces (para dejarlo exactamente en su estado original) y se confirmó que el cambio se aplicó correctamente en ambos casos pese al error de auditoría.
+
 ## 11. Pase de UX/rendimiento y bug real encontrado
 
 A petición del cliente se hizo un pase de mejora de experiencia de usuario:

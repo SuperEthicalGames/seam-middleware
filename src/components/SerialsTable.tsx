@@ -28,14 +28,22 @@ export function SerialsTable({ serials, loading, error, onRetry, onChanged, show
     if (!pending || !user) return
     setSubmitting(true)
     try {
-      await toggleSerial({
+      const result = await toggleSerial({
         game: pending.game,
         code: pending.code,
         active: !pending.active,
         adminUid: user.uid,
         adminEmail: profile?.email ?? user.email ?? 'desconocido',
       })
-      showToast('success', `Serial ${pending.code} ${pending.active ? 'desactivado' : 'activado'} correctamente.`)
+      const action = pending.active ? 'desactivado' : 'activado'
+      if (result.auditLogged) {
+        showToast('success', `Serial ${pending.code} ${action} correctamente.`)
+      } else {
+        showToast(
+          'info',
+          `Serial ${pending.code} ${action} correctamente, pero no se pudo registrar en la auditoría (revise que las Rules de la base central estén publicadas).`,
+        )
+      }
       setPending(null)
       onChanged?.()
     } catch (err) {
