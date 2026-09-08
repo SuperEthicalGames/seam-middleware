@@ -2,8 +2,7 @@ import { useAsync } from '@/hooks/useAsync'
 import { loadDashboardData } from '@/services/DashboardService'
 import { StatCard, Card } from '@/components/Card'
 import { Badge } from '@/components/Badge'
-import { ErrorState } from '@/components/States'
-import { TableSkeleton } from '@/components/States'
+import { ErrorState, StatCardSkeleton, ChartCardSkeleton } from '@/components/States'
 import { SessionsByDateChart } from '@/charts/SessionsByDateChart'
 import { SerialsStatusChart } from '@/charts/SerialsStatusChart'
 import { UsersByGameChart } from '@/charts/UsersByGameChart'
@@ -17,11 +16,14 @@ export function Dashboard() {
       <div className="space-y-6">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {Array.from({ length: 4 }).map((_, i) => (
-            <Card key={i}>
-              <TableSkeleton rows={2} cols={1} />
-            </Card>
+            <StatCardSkeleton key={i} />
           ))}
         </div>
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          <ChartCardSkeleton />
+          <ChartCardSkeleton />
+        </div>
+        <ChartCardSkeleton height="h-72" />
       </div>
     )
   }

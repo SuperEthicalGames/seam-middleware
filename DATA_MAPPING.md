@@ -78,6 +78,16 @@ Escala observada: 18 `users`, **1** `identificators`, **1** `serials`.
 | `results.gameNN.time` | string | **opcional** | `"0:50 seconds"` | Campo se llama **`time`, no `timing`** (diferencia de nombre respecto a G1/G2). Ausente cuando falta `hour`. |
 | `results.gameNN.stars` | — | **nunca observado** | — | Game 3 **no tiene el concepto de estrellas** en los datos reales. |
 
+**Confirmado por código fuente (2026-09-08, `ScoreController.cs` provisto por el cliente):** el controlador de guardado de Cafetero escribe únicamente `time`/`score`/`difficulty`/`experience`/`date`/`hour` en `results/{gameNN}` — **no existe ninguna línea de código que calcule o guarde una estrella**. No es un dato faltante por un bug de la app; el juego nunca tuvo ese mecanismo. Por contraste, se confirmó también el código de `BaseExercise.cs` (clase base compartida por Amazonas y Cartagena) con el método:
+```csharp
+private int CalculateStars(int score) {
+    if (score >= 66) return 3;
+    if (score >= 33) return 2;
+    return 1;
+}
+```
+Se validó matemáticamente contra las **68 entradas reales** de Amazonas + Cartagena con `score` y `stars` a la vez: **0 discrepancias**. Es la fórmula real confirmada (no inferida) para esos dos juegos. **No se aplica a Cafetero** — son juegos distintos con controladores distintos, y Cafetero además tiene 5 minijuegos con escalas de puntaje incompatibles entre sí (`CoffeeWash` ≈ 0–100, `CoffeeCollection`/`CoffeeClassification` ≈ 0–3000+), por lo que ni siquiera existiría un umbral único coherente que aplicar. El portal **no calcula ni muestra estrellas inventadas para Cafetero** — sección 7 del prompt original ("NO INVENTES DATOS").
+
 ### `identificators` / `serials`
 Mismo patrón conceptual (hash string → serial code string → `0`/`1`), pero el sistema está casi vacío: solo 1 identificator/1 serial pese a 18 usuarios. Esto sugiere que el control de acceso por serial en Game 3 está subutilizado o gestionado de otra forma no visible en esta RTDB (por ejemplo, localmente en el dispositivo). **Riesgo a documentar**, no a asumir.
 

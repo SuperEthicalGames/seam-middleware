@@ -18,7 +18,9 @@ No hay presupuesto para Cloud Functions (requieren plan Blaze incluso con uso $0
 
 ## 4. Métricas y gráficos no incluidos
 
-No se mostrará ninguna métrica que mezcle `score` entre juegos (escalas incompatibles, ver `DATA_MAPPING.md` sección 7), ni "estrellas" para Game 3 (no existe ese campo), ni ninguna interpretación clínica/diagnóstica de los datos de fisioterapia — el prompt lo prohíbe explícitamente (sección 21).
+No se mostrará ninguna métrica que mezcle `score` entre juegos (escalas incompatibles, ver `DATA_MAPPING.md` sección 7), ni ninguna interpretación clínica/diagnóstica de los datos de fisioterapia — el prompt lo prohíbe explícitamente (sección 21).
+
+**Estrellas en Cafetero — confirmado que no son calculables, no solo "no observadas".** El cliente compartió el código fuente real de guardado de puntajes de los 3 juegos. El de Cafetero (`ScoreController.cs`) nunca calcula ni escribe una estrella — se verificó línea por línea. El de Amazonas/Cartagena (`BaseExercise.cs`, clase base compartida) sí la calcula con `CalculateStars(score)`: 3 si `score>=66`, 2 si `score>=33`, 1 en otro caso — fórmula validada matemáticamente contra las 68 entradas reales con score+stars de esos dos juegos, 0 discrepancias. Esa fórmula es específica de esos dos juegos (comparten la misma clase base) y no aplica a Cafetero, que además tiene 5 minijuegos con escalas de puntaje incompatibles entre sí. El portal muestra "No aplica" (con una explicación al pasar el cursor) en vez de un guion vacío o una estrella inventada.
 
 ## 5. Generación de PDF
 
@@ -50,3 +52,13 @@ Antes de considerar el MVP funcional se verificó en un navegador real, contra l
 - Módulo Seriales: la lista refleja el estado real (activo/inactivo) de cada serial; el diálogo de confirmación ("¿Está seguro de que desea desactivar...?") aparece correctamente antes de cualquier escritura.
 
 **No se probó en vivo** (deliberadamente, para no modificar datos de producción sin autorización explícita): la escritura real de `serials` y su registro en auditoría, el flujo completo de creación de la primera cuenta admin (requiere acceso a Firebase Console del cliente), y la entrega del correo de recuperación de contraseña. La lógica de estas tres rutas se revisó por código y sigue el mismo patrón ya validado (mismo `update()` usado y verificado para lectura, mismo `AuthService` de Firebase).
+
+## 10. Pase de UX/rendimiento y bug real encontrado
+
+A petición del cliente se hizo un pase de mejora de experiencia de usuario:
+
+- **Nombres claros**: los códigos internos de ejercicio (`exercise1`, `CoffeeWash`, `dance exercise`, etc.) ahora se muestran traducidos en la UI y el PDF (`src/utils/labels.ts`) — ej. "Lavado del café" — conservando el valor original como referencia secundaria para trazabilidad, sin perder el dato crudo.
+- **Rendimiento**: cada página interna ahora se carga con `React.lazy` (code-splitting por ruta). El login ya no descarga recharts ni jsPDF — el bundle de esa ruta bajó de ~83 KB a ~44 KB. El `Suspense` vive alrededor del contenido de página dentro de `AppLayout`, no de toda la ruta, para que el sidebar/header no desaparezcan al navegar.
+- **A prueba de bugs**: se agregó un `ErrorBoundary` global (`src/components/ErrorBoundary.tsx`) — antes, un error de render en cualquier componente dejaba la pantalla completamente en blanco sin ningún mensaje.
+- **Bug real encontrado y corregido durante la prueba responsive**: el ícono de navegación del sidebar usaba la clase `h-4.5 w-4.5`, que **no existe en la escala por defecto de Tailwind** (no genera ninguna regla CSS), así que los íconos se renderizaban sin tamaño controlado — invisibles a la escala de captura de pantalla usada en las pruebas anteriores, pero gigantes y con scroll horizontal roto en viewport de tablet real (768px). Corregido a `h-5 w-5`. Se auditó el resto del proyecto por el mismo tipo de error (valores `.5` fuera de la escala de Tailwind) y no se encontraron más casos.
+- Verificado visualmente en desktop, tablet (768px) y mobile (375px, incluyendo el menú hamburguesa) contra los datos reales.

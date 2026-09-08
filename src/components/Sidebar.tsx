@@ -83,7 +83,7 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
               }`
             }
           >
-            <item.icon className="h-4.5 w-4.5 shrink-0" />
+            <item.icon className="h-5 w-5 shrink-0" />
             {item.label}
           </NavLink>
         ))}

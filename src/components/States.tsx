@@ -36,3 +36,22 @@ export function TableSkeleton({ rows = 5, cols = 4 }: { rows?: number; cols?: nu
     </div>
   )
 }
+
+export function StatCardSkeleton() {
+  return (
+    <div className="card animate-pulse p-5">
+      <div className="h-3.5 w-2/3 rounded bg-ink-100" />
+      <div className="mt-3 h-7 w-1/3 rounded bg-ink-100" />
+      <div className="mt-3 h-3 w-3/4 rounded bg-ink-100" />
+    </div>
+  )
+}
+
+export function ChartCardSkeleton({ height = 'h-64' }: { height?: string }) {
+  return (
+    <div className="card animate-pulse p-5">
+      <div className="mb-4 h-4 w-1/3 rounded bg-ink-100" />
+      <div className={`${height} w-full rounded-lg bg-ink-50`} />
+    </div>
+  )
+}

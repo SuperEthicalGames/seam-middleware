@@ -2,6 +2,7 @@ import type { NormalizedSession } from '@/types/game'
 import { DataTable, type Column } from './DataTable'
 import { Badge } from './Badge'
 import { formatDateEs, formatDifficultyLabel, formatDurationEs } from '@/utils/normalize'
+import { formatExerciseLabel } from '@/utils/labels'
 
 const DIFFICULTY_TONE = {
   easy: 'success',
@@ -26,7 +27,14 @@ export function SessionsTable({ sessions, loading, error, onRetry }: { sessions:
     {
       key: 'exercise',
       header: 'Ejercicio',
-      render: (s) => s.exercise ?? 'No disponible',
+      render: (s) => (
+        <div>
+          <div>{formatExerciseLabel(s.exercise)}</div>
+          {s.exercise && formatExerciseLabel(s.exercise) !== s.exercise && (
+            <div className="text-xs text-ink-400">{s.exercise}</div>
+          )}
+        </div>
+      ),
       sortValue: (s) => s.exercise ?? '',
     },
     {
@@ -44,7 +52,14 @@ export function SessionsTable({ sessions, loading, error, onRetry }: { sessions:
     {
       key: 'stars',
       header: 'Estrellas',
-      render: (s) => (s.stars === null ? '—' : '★'.repeat(s.stars)),
+      render: (s) =>
+        s.stars === null ? (
+          <span className="text-xs text-ink-400" title="Este juego no calcula estrellas — confirmado en su código fuente, no es un dato faltante.">
+            No aplica
+          </span>
+        ) : (
+          <span title={`${s.stars} de 3 estrellas`}>{'★'.repeat(s.stars)}</span>
+        ),
       sortValue: (s) => s.stars ?? -1,
     },
     {

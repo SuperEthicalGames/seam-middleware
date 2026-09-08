@@ -5,6 +5,7 @@ import { GAME_CATALOG } from '@/config/games'
 import type { SessionFilters } from '@/utils/sessionFilters'
 import { applySessionFilters, hasActiveFilters } from '@/utils/sessionFilters'
 import { formatDateEs, formatDifficultyLabel, formatDurationEs } from '@/utils/normalize'
+import { formatExerciseLabel } from '@/utils/labels'
 
 interface GenerateParams {
   profile: ConsolidatedProfile
@@ -108,10 +109,10 @@ export function generatePatientReportPdf({ profile, filters, generatedByEmail }:
       head: [['Fecha', 'Ejercicio', 'Dificultad', 'Puntaje', 'Estrellas', 'Duración']],
       body: filtered.map((s) => [
         formatDateEs(s.date),
-        s.exercise ?? 'No disponible',
+        formatExerciseLabel(s.exercise),
         formatDifficultyLabel(s.difficulty),
         s.score === null ? 'No disponible' : String(s.score),
-        s.stars === null ? '—' : '★'.repeat(s.stars),
+        s.stars === null ? 'No aplica' : '★'.repeat(s.stars),
         formatDurationEs(s.durationSeconds),
       ]),
       styles: { fontSize: 8.5, cellPadding: 5 },

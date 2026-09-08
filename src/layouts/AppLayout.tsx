@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { Suspense, useState } from 'react'
 import { Outlet, useLocation } from 'react-router-dom'
 import { Sidebar, SidebarNav } from '@/components/Sidebar'
 import { Header } from '@/components/Header'
 import { Logo } from '@/components/Logo'
+import { InlineSpinner } from '@/components/LoadingSpinner'
 
 function getPageTitle(pathname: string): string {
   if (pathname === '/') return 'Dashboard'
@@ -40,7 +41,9 @@ export function AppLayout() {
       <div className="flex min-w-0 flex-1 flex-col">
         <Header title={getPageTitle(location.pathname)} onMenuClick={() => setMobileOpen(true)} />
         <main className="flex-1 overflow-y-auto p-4 md:p-6">
-          <Outlet />
+          <Suspense fallback={<InlineSpinner label="Cargando página..." />}>
+            <Outlet />
+          </Suspense>
         </main>
       </div>
     </div>
