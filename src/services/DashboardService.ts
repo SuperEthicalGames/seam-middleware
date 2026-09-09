@@ -2,6 +2,7 @@ import { GAME_IDS } from '@/config/games'
 import { adapterRegistry } from '@/adapters'
 import type { GameId, NormalizedDifficulty, NormalizedSession, NormalizedUser } from '@/types/game'
 import { toFriendlyMessage } from '@/utils/errors'
+import { computePopulationExercisePerformance, computePerformanceDistribution, type PerformanceBand, type PopulationExercisePerformance } from '@/utils/populationPerformance'
 
 export interface GameSummary {
   game: GameId
@@ -29,6 +30,10 @@ export interface DashboardData {
   difficultyDistribution: Record<NormalizedDifficulty, number>
   /** Pacientes con más sesiones registradas, por juego (el eje central del portal: rendimiento del paciente). */
   topPatients: TopPatient[]
+  /** Rendimiento promedio por ejercicio, agregando las sesiones de todos los pacientes de cada juego. */
+  exercisePerformance: PopulationExercisePerformance[]
+  /** Dónde se concentran (bajo/medio/alto) todas las sesiones con puntaje normalizado conocido. */
+  performanceDistribution: Record<PerformanceBand, number>
 }
 
 /**
@@ -108,5 +113,15 @@ export async function loadDashboardData(): Promise<DashboardData> {
   summaries.sort((a, b) => GAME_IDS.indexOf(a.game) - GAME_IDS.indexOf(b.game))
   topPatients.sort((a, b) => b.sessionCount - a.sessionCount)
 
-  return { summaries, sessionsByDate, difficultyDistribution, topPatients: topPatients.slice(0, 8) }
+  const exercisePerformance = computePopulationExercisePerformance(sessionsByGame)
+  const performanceDistribution = computePerformanceDistribution(sessionsByGame)
+
+  return {
+    summaries,
+    sessionsByDate,
+    difficultyDistribution,
+    topPatients: topPatients.slice(0, 8),
+    exercisePerformance,
+    performanceDistribution,
+  }
 }

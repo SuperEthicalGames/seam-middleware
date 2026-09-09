@@ -8,6 +8,8 @@ import { SerialsStatusChart } from '@/charts/SerialsStatusChart'
 import { UsersByGameChart } from '@/charts/UsersByGameChart'
 import { DifficultyDistributionChart } from '@/charts/DifficultyDistributionChart'
 import { TopPatientsChart } from '@/charts/TopPatientsChart'
+import { ExercisePerformanceOverviewChart } from '@/charts/ExercisePerformanceOverviewChart'
+import { PerformanceDistributionChart } from '@/charts/PerformanceDistributionChart'
 import { GAME_CATALOG } from '@/config/games'
 
 export function Dashboard() {
@@ -71,6 +73,26 @@ export function Dashboard() {
             <h3 className="mb-1 text-sm font-semibold text-ink-800">Distribución de dificultad</h3>
             <p className="mb-4 text-xs text-ink-400">Sesiones jugadas por nivel de dificultad, acumulado de los 3 juegos.</p>
             <DifficultyDistributionChart distribution={data.difficultyDistribution} />
+          </Card>
+        </div>
+      </div>
+
+      <div>
+        <h2 className="mb-1 text-base font-semibold text-ink-900">Capacidad fisioterapéutica</h2>
+        <p className="mb-3 text-xs text-ink-400">
+          Rendimiento normalizado (% de una partida de referencia) agregando las sesiones de todos los pacientes — síntesis estadística, no una
+          evaluación clínica.
+        </p>
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          <Card>
+            <h3 className="mb-1 text-sm font-semibold text-ink-800">Rendimiento promedio por ejercicio</h3>
+            <p className="mb-4 text-xs text-ink-400">Todos los pacientes de cada juego — los ejercicios más difíciles para la población aparecen arriba.</p>
+            <ExercisePerformanceOverviewChart data={data.exercisePerformance} />
+          </Card>
+          <Card>
+            <h3 className="mb-1 text-sm font-semibold text-ink-800">Distribución general de rendimiento</h3>
+            <p className="mb-4 text-xs text-ink-400">Todas las sesiones de los 3 juegos, según su puntaje normalizado.</p>
+            <PerformanceDistributionChart distribution={data.performanceDistribution} />
           </Card>
         </div>
       </div>
