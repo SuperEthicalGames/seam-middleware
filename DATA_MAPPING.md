@@ -28,7 +28,7 @@ Escala observada: 15 `users`, 25 `identificators`, 25 `serials`.
 | `record.gameNN.date` | string | — | `"27/08/2026"` | Formato `DD/MM/YYYY`. |
 | `record.gameNN.hour` | string | — | `"16:10:54"` | `HH:MM:SS`, 24h. |
 | `record.gameNN.difficulty` | string | — | `"EASY"` / `"MEDIUM"` / `"HARD"` | Mayúsculas. |
-| `record.gameNN.experience` | string | — | `"exercise1"`, `"exercise2"`, `"exercise3"` | Nombre del ejercicio. |
+| `record.gameNN.experience` | string | — | `"exercise1"`, `"exercise2"`, `"exercise3"` | Nombre del ejercicio. Confirmado por el cliente: `exercise1` = "Pesca en el río", `exercise2` = "Saca agua del pozo", `exercise3` = "Juego de memoria" (ver `src/utils/labels.ts`). |
 | `record.gameNN.score` | number | — | `33`, `87` | Entero. |
 | `record.gameNN.stars` | number | — | `1`–`3` | |
 | `record.gameNN.timing` | string | — | `"4:04 seconds"` | Formato texto libre `M:SS seconds`, **no** segundos numéricos. |
@@ -52,7 +52,7 @@ Escala observada: 9 `users`, 15 `identificators`, 15 `serials`.
 
 Estructura **idéntica** a Game 1 (`cedula`, `record.gameNN`, `results.<experience>.difficult.<nivel>`, mismos nombres de campo `date/hour/difficulty/experience/score/stars/timing`). Difieren solo el **contenido**:
 
-- `experience` usa otros valores: `"exercisedance"`, `"dance exercise"` (dos variantes de nombre para el mismo tipo de ejercicio — inconsistencia dentro del propio juego).
+- `experience` usa otros valores: `"exercisedance"`, `"dance exercise"` (dos variantes de nombre para el mismo tipo de ejercicio — inconsistencia dentro del propio juego). **Confirmado por el cliente: Cartagena solo tiene 1 minijuego ("Danza")** — las 2 variantes corresponden a versiones distintas de la app (verificado con datos reales: un mismo usuario tiene partidas con cada variante en fechas distintas). El portal las agrupa bajo una sola clave canónica para el análisis por ejercicio (`canonicalExercise` en `src/utils/labels.ts`), sin alterar el dato crudo de cada sesión.
 - Mismo campo `cedula` (no `CC`).
 - `identificators`/`serials` comparten formato con Game 1 (algunas claves de `serials` son literalmente las mismas cadenas hex que en Game 1, ej. `ca2d69f853f3c06a059100ad439c46a7` — probablemente porque ambos juegos comparten el mismo código Unity/plugin de licenciamiento, pero **son namespaces independientes**: activar ese serial en Game 1 no activa nada en Game 2).
 

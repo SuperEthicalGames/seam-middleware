@@ -1,5 +1,6 @@
 import type { GameId, NormalizedDifficulty, NormalizedSession } from '@/types/game'
 import { scoreToPercent } from './scoreReference'
+import { canonicalExercise } from './labels'
 
 export type PerformanceTrend = 'mejorando' | 'estable' | 'disminuyendo'
 
@@ -42,15 +43,20 @@ function computeTrend(sortedScores: number[]): PerformanceTrend | null {
  * fisioterapéutica según el minijuego" que cada ejercicio mide por separado.
  * Nunca mezcla puntajes crudos de un ejercicio con otro (ver scoreReference.ts);
  * la tendencia compara las sesiones más antiguas contra las más recientes DENTRO
- * del mismo ejercicio, nunca entre ejercicios distintos.
+ * del mismo ejercicio, nunca entre ejercicios distintos. Agrupa por la clave
+ * CANÓNICA (`canonicalExercise`) para no separar el mismo minijuego cuando el juego
+ * lo escribió con 2 códigos internos distintos (confirmado con Cartagena/Danza) —
+ * el dato crudo de cada sesión (`s.exercise`) nunca se modifica, solo se usa una
+ * clave normalizada para decidir a qué grupo pertenece.
  */
 export function computeExercisePerformance(sessions: NormalizedSession[], game: GameId): ExercisePerformance[] {
   const byExercise = new Map<string, NormalizedSession[]>()
   for (const s of sessions) {
     if (!s.exercise) continue
-    const list = byExercise.get(s.exercise) ?? []
+    const key = canonicalExercise(s.exercise)
+    const list = byExercise.get(key) ?? []
     list.push(s)
-    byExercise.set(s.exercise, list)
+    byExercise.set(key, list)
   }
 
   const results: ExercisePerformance[] = []

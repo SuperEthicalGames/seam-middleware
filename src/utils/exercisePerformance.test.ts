@@ -54,6 +54,18 @@ describe('computeExercisePerformance', () => {
     expect(result[0].exercise).toBe('exercise1')
   })
 
+  it('agrupa "exercisedance" y "dance exercise" de Cartagena como el mismo minijuego (confirmado por el cliente: es 1 solo minijuego)', () => {
+    const sessions = [
+      session({ game: 'game2', exercise: 'dance exercise', score: 73, date: '2025-01-23' }),
+      session({ game: 'game2', exercise: 'exercisedance', score: 87, date: '2025-08-20' }),
+      session({ game: 'game2', exercise: 'exercisedance', score: 52, date: '2025-08-20' }),
+    ]
+    const result = computeExercisePerformance(sessions, 'game2')
+    expect(result).toHaveLength(1)
+    expect(result[0].count).toBe(3)
+    expect(result[0].avgScore).toBe(Math.round((73 + 87 + 52) / 3))
+  })
+
   describe('tendencia', () => {
     it('es null con menos de 4 sesiones con puntaje (no hay suficiente evidencia)', () => {
       const sessions = [
