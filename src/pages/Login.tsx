@@ -51,7 +51,7 @@ export function Login() {
       <div className="flex flex-1 items-center justify-center px-4 py-12 sm:px-8">
         <div className="w-full max-w-sm animate-fade-in-up">
           <div className="mb-8 flex justify-center lg:hidden">
-            <img src="/seam-heart.webp" alt="SEAM" className="h-16 w-16 rounded-2xl shadow-md" />
+            <img src={`${import.meta.env.BASE_URL}seam-heart.webp`} alt="SEAM" className="h-16 w-16 rounded-2xl shadow-md" />
           </div>
 
           <h1 className="text-xl font-semibold text-ink-900">Iniciar sesión</h1>

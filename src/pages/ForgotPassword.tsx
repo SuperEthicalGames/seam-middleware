@@ -29,7 +29,7 @@ export function ForgotPassword() {
     <div className="flex min-h-screen items-center justify-center bg-ink-50 px-4">
       <div className="w-full max-w-sm animate-fade-in-up">
         <div className="mb-8 flex justify-center">
-          <img src="/seam-heart.webp" alt="SEAM" className="h-16 w-16 rounded-2xl shadow-md" />
+          <img src={`${import.meta.env.BASE_URL}seam-heart.webp`} alt="SEAM" className="h-16 w-16 rounded-2xl shadow-md" />
         </div>
         <div className="card p-7">
           <h1 className="mb-1 text-lg font-semibold text-ink-900">Recuperar contraseña</h1>

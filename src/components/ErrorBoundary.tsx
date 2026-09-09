@@ -39,7 +39,17 @@ export class ErrorBoundary extends Component<Props, State> {
               El portal encontró un problema al mostrar esta página. Intente recargar; si el problema continúa, contacte a soporte técnico.
             </p>
           </div>
-          <button type="button" className="btn-primary" onClick={() => window.location.assign('/')}>
+          <button
+            type="button"
+            className="btn-primary"
+            onClick={() => {
+              // No usar una ruta absoluta ("/") — con HashRouter y el portal servido
+              // desde un subpath (GitHub Pages: /<repo>/), eso saldría del sitio.
+              // Solo se resetea el hash, conservando origin+pathname actuales.
+              window.location.hash = '#/'
+              window.location.reload()
+            }}
+          >
             Volver al inicio
           </button>
         </div>

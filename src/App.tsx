@@ -1,5 +1,5 @@
 import { lazy } from 'react'
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { HashRouter, Routes, Route } from 'react-router-dom'
 import { AuthProvider } from '@/auth/AuthContext'
 import { ProtectedRoute } from '@/auth/ProtectedRoute'
 import { ToastProvider } from '@/components/ToastProvider'
@@ -26,7 +26,10 @@ export function App() {
   return (
     <ToastProvider>
       <AuthProvider>
-        <BrowserRouter>
+        {/* HashRouter (URLs con #) en vez de BrowserRouter: publicado en GitHub Pages,
+            que no puede reescribir rutas al servidor — con BrowserRouter, recargar o
+            compartir un link directo a /paciente/123 daría 404. */}
+        <HashRouter>
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/recuperar" element={<ForgotPassword />} />
@@ -47,7 +50,7 @@ export function App() {
 
             <Route path="*" element={<NotFound />} />
           </Routes>
-        </BrowserRouter>
+        </HashRouter>
       </AuthProvider>
     </ToastProvider>
   )
