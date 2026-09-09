@@ -5,7 +5,14 @@ import type { GameId } from '@/types/game'
 import { Card } from '@/components/Card'
 import { Badge } from '@/components/Badge'
 import { DataTable, type Column } from '@/components/DataTable'
-import type { AuditEntry } from '@/types/central'
+import type { AuditAction, AuditEntry } from '@/types/central'
+
+const ACTION_META: Record<AuditAction, { label: string; tone: 'success' | 'danger' | 'neutral' }> = {
+  serial_activate: { label: 'Activación de serial', tone: 'success' },
+  serial_deactivate: { label: 'Desactivación de serial', tone: 'danger' },
+  admin_created: { label: 'Administrador creado', tone: 'success' },
+  admin_revoked: { label: 'Acceso revocado', tone: 'danger' },
+}
 
 export function AuditLog() {
   const { data, loading, error, reload } = useAsync(() => getRecentAuditEntries(200), [])
@@ -18,21 +25,39 @@ export function AuditLog() {
       sortValue: (e) => e.timestamp,
     },
     { key: 'adminEmail', header: 'Administrador', render: (e) => e.adminEmail, sortValue: (e) => e.adminEmail },
-    { key: 'game', header: 'Juego', render: (e) => (e.game ? (GAME_CATALOG[e.game as GameId]?.displayName ?? e.game) : '—'), sortValue: (e) => e.game ?? '' },
-    { key: 'serial', header: 'Serial', render: (e) => <span className="font-mono text-xs">{e.serial}</span> },
     {
       key: 'action',
       header: 'Acción',
-      render: (e) => <Badge tone={e.action === 'serial_activate' ? 'success' : 'danger'}>{e.action === 'serial_activate' ? 'Activación' : 'Desactivación'}</Badge>,
+      render: (e) => <Badge tone={ACTION_META[e.action].tone}>{ACTION_META[e.action].label}</Badge>,
+      sortValue: (e) => e.action,
     },
-    { key: 'change', header: 'Cambio', render: (e) => `${e.previousValue} → ${e.newValue}` },
+    {
+      key: 'detail',
+      header: 'Detalle',
+      // Seriales (game + serial) y cuentas de administrador (targetEmail) comparten
+      // este mismo log — cada acción solo llena los campos que le aplican.
+      render: (e) =>
+        e.serial ? (
+          <span>
+            <span className="font-mono text-xs">{e.serial}</span>
+            {e.game && <span className="ml-1 text-ink-400">({GAME_CATALOG[e.game as GameId]?.displayName ?? e.game})</span>}
+          </span>
+        ) : (
+          (e.targetEmail ?? '—')
+        ),
+    },
+    {
+      key: 'change',
+      header: 'Cambio',
+      render: (e) => (e.previousValue !== undefined && e.newValue !== undefined ? `${e.previousValue} → ${e.newValue}` : '—'),
+    },
   ]
 
   return (
     <div className="space-y-4">
       <Card>
         <h2 className="mb-1 text-sm font-semibold text-ink-800">Auditoría</h2>
-        <p className="text-sm text-ink-500">Registro de activaciones y desactivaciones de seriales realizadas desde el portal.</p>
+        <p className="text-sm text-ink-500">Registro de activaciones/desactivaciones de seriales y de creación/revocación de administradores realizadas desde el portal.</p>
       </Card>
       <Card>
         <DataTable columns={columns} rows={data ?? []} rowKey={(e) => e.id} loading={loading} error={error} onRetry={reload} emptyTitle="No hay registros de auditoría todavía." pageSize={15} />

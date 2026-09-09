@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { toggleSerial, getAllSerials } from './SerialService'
 import { adapterRegistry } from '@/adapters'
-import { recordAuditEntry } from './AuditService'
+import { tryRecordAuditEntry } from './AuditService'
 
 vi.mock('@/adapters', () => ({
   adapterRegistry: {
@@ -10,9 +10,9 @@ vi.mock('@/adapters', () => ({
     game3: { getSerials: vi.fn(), setSerialStatus: vi.fn() },
   },
 }))
-vi.mock('./AuditService', () => ({ recordAuditEntry: vi.fn() }))
+vi.mock('./AuditService', () => ({ tryRecordAuditEntry: vi.fn() }))
 
-const mockedRecordAudit = vi.mocked(recordAuditEntry)
+const mockedTryRecordAudit = vi.mocked(tryRecordAuditEntry)
 const mockedSetSerialStatus = vi.mocked(adapterRegistry.game1.setSerialStatus)
 
 const params = { game: 'game1' as const, code: 'abc', active: true, adminUid: 'u1', adminEmail: 'a@seam.test' }
@@ -22,42 +22,41 @@ describe('toggleSerial', () => {
     vi.clearAllMocks()
   })
 
-  it('reporta auditLogged=true cuando la escritura del serial y la auditoría funcionan', async () => {
+  it('llama a setSerialStatus y devuelve tal cual el resultado de tryRecordAuditEntry (el manejo de fallo de auditoría vive ahí, ver AuditService.test.ts)', async () => {
     mockedSetSerialStatus.mockResolvedValueOnce({ code: 'abc', previousValue: 0, newValue: 1 })
-    mockedRecordAudit.mockResolvedValueOnce(undefined)
+    mockedTryRecordAudit.mockResolvedValueOnce({ auditLogged: true })
 
     const result = await toggleSerial(params)
 
     expect(result).toEqual({ auditLogged: true })
-    expect(mockedRecordAudit).toHaveBeenCalledWith(
+    expect(mockedTryRecordAudit).toHaveBeenCalledWith(
       expect.objectContaining({ game: 'game1', serial: 'abc', previousValue: 0, newValue: 1, action: 'serial_activate' }),
     )
   })
 
-  it('reporta éxito (auditLogged=false) si el serial sí cambió pero la auditoría falló — regresión del bug documentado en LIMITATIONS.md #10', async () => {
+  it('propaga un auditLogged=false de tryRecordAuditEntry sin tratarlo como error de toggleSerial', async () => {
     mockedSetSerialStatus.mockResolvedValueOnce({ code: 'abc', previousValue: 0, newValue: 1 })
-    mockedRecordAudit.mockRejectedValueOnce({ code: 'PERMISSION_DENIED' })
+    mockedTryRecordAudit.mockResolvedValueOnce({ auditLogged: false, auditError: 'algo falló' })
 
     const result = await toggleSerial(params)
 
-    expect(result.auditLogged).toBe(false)
-    expect(result.auditError).toBeTruthy()
+    expect(result).toEqual({ auditLogged: false, auditError: 'algo falló' })
   })
 
-  it('propaga el error y nunca intenta auditar si la escritura del serial (operación principal) falla', async () => {
+  it('propaga el error y nunca intenta auditar si la escritura del serial (operación principal) falla — regresión del bug documentado en LIMITATIONS.md #10', async () => {
     mockedSetSerialStatus.mockRejectedValueOnce(new Error('network error'))
 
     await expect(toggleSerial(params)).rejects.toThrow('network error')
-    expect(mockedRecordAudit).not.toHaveBeenCalled()
+    expect(mockedTryRecordAudit).not.toHaveBeenCalled()
   })
 
   it('registra action=serial_deactivate cuando active=false', async () => {
     mockedSetSerialStatus.mockResolvedValueOnce({ code: 'abc', previousValue: 1, newValue: 0 })
-    mockedRecordAudit.mockResolvedValueOnce(undefined)
+    mockedTryRecordAudit.mockResolvedValueOnce({ auditLogged: true })
 
     await toggleSerial({ ...params, active: false })
 
-    expect(mockedRecordAudit).toHaveBeenCalledWith(expect.objectContaining({ action: 'serial_deactivate' }))
+    expect(mockedTryRecordAudit).toHaveBeenCalledWith(expect.objectContaining({ action: 'serial_deactivate' }))
   })
 })
 

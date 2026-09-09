@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { get, set, update } from 'firebase/database'
-import { ensureAdminProfile, getAllAdmins } from './AdminService'
+import { get, remove, set, update } from 'firebase/database'
+import { ensureAdminProfile, getAllAdmins, createNewAdmin, revokeAdmin } from './AdminService'
+import { createAdminAuthAccount } from '@/firebase/adminCreation'
+import { tryRecordAuditEntry } from './AuditService'
 import { makeSnapshot } from '@/test/firebaseTestUtils'
 import type { User } from 'firebase/auth'
 import type { AdminProfile } from '@/types/central'
@@ -9,13 +11,19 @@ vi.mock('firebase/database', () => ({
   get: vi.fn(),
   set: vi.fn(),
   update: vi.fn(),
+  remove: vi.fn(),
   ref: vi.fn((db: unknown, path?: string) => ({ db, path })),
 }))
 vi.mock('@/firebase/central', () => ({ centralDb: {} }))
+vi.mock('@/firebase/adminCreation', () => ({ createAdminAuthAccount: vi.fn() }))
+vi.mock('./AuditService', () => ({ tryRecordAuditEntry: vi.fn() }))
 
 const mockedGet = vi.mocked(get)
 const mockedSet = vi.mocked(set)
 const mockedUpdate = vi.mocked(update)
+const mockedRemove = vi.mocked(remove)
+const mockedCreateAuthAccount = vi.mocked(createAdminAuthAccount)
+const mockedTryRecordAudit = vi.mocked(tryRecordAuditEntry)
 
 function fakeUser(overrides: Partial<User> = {}): User {
   return { uid: 'uid1', email: 'admin@seam.test', displayName: null, ...overrides } as User
@@ -68,5 +76,61 @@ describe('getAllAdmins', () => {
     const admins = await getAllAdmins()
 
     expect(admins.map((a) => a.uid)).toEqual(['uidA', 'uidB'])
+  })
+})
+
+describe('createNewAdmin', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  const params = { email: 'empleado@seam.test', createdByUid: 'owner1', createdByEmail: 'owner@seam.test' }
+
+  it('crea la cuenta de Auth, escribe el perfil con role:admin (nunca owner) y audita', async () => {
+    mockedCreateAuthAccount.mockResolvedValueOnce({ uid: 'newUid' })
+    mockedSet.mockResolvedValueOnce(undefined)
+    mockedTryRecordAudit.mockResolvedValueOnce({ auditLogged: true })
+
+    const result = await createNewAdmin(params)
+
+    expect(mockedCreateAuthAccount).toHaveBeenCalledWith('empleado@seam.test')
+    expect(mockedSet).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ uid: 'newUid', email: 'empleado@seam.test', role: 'admin' }))
+    expect(mockedTryRecordAudit).toHaveBeenCalledWith(expect.objectContaining({ action: 'admin_created', targetEmail: 'empleado@seam.test' }))
+    expect(result.profile.role).toBe('admin')
+    expect(result.auditLogged).toBe(true)
+  })
+
+  it('usa la parte local del correo como displayName si no se da uno', async () => {
+    mockedCreateAuthAccount.mockResolvedValueOnce({ uid: 'newUid' })
+    mockedSet.mockResolvedValueOnce(undefined)
+    mockedTryRecordAudit.mockResolvedValueOnce({ auditLogged: true })
+
+    const result = await createNewAdmin(params)
+
+    expect(result.profile.displayName).toBe('empleado')
+  })
+
+  it('propaga el error si la creación de la cuenta de Auth falla, sin escribir ningún perfil', async () => {
+    mockedCreateAuthAccount.mockRejectedValueOnce({ code: 'auth/email-already-in-use' })
+
+    await expect(createNewAdmin(params)).rejects.toBeTruthy()
+    expect(mockedSet).not.toHaveBeenCalled()
+  })
+})
+
+describe('revokeAdmin', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('borra el perfil y su entrada del allow-list, y audita admin_revoked', async () => {
+    mockedRemove.mockResolvedValue(undefined)
+    mockedTryRecordAudit.mockResolvedValueOnce({ auditLogged: true })
+
+    const result = await revokeAdmin({ targetUid: 'targetUid', targetEmail: 'empleado@seam.test', revokedByUid: 'owner1', revokedByEmail: 'owner@seam.test' })
+
+    expect(mockedRemove).toHaveBeenCalledTimes(2)
+    expect(mockedTryRecordAudit).toHaveBeenCalledWith(expect.objectContaining({ action: 'admin_revoked', targetEmail: 'empleado@seam.test' }))
+    expect(result.auditLogged).toBe(true)
   })
 })

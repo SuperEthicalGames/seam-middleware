@@ -30,23 +30,20 @@ npm run dev
 
 Abre `http://localhost:5173`. El login solo funciona con una cuenta creada en Firebase Console (ver "Primer acceso" abajo) — no hay registro público.
 
-## Primer acceso (crear un administrador)
+## Primer acceso (crear el primer administrador)
 
-No hay Cloud Functions ni Admin SDK en el frontend (ver `LIMITATIONS.md` — ambos implicarían costo o exponer credenciales privilegiadas). El alta de administradores es manual, en dos pasos: crear la cuenta de Firebase Auth y autorizar su UID. El segundo paso existe porque la API key de Firebase es pública por diseño (va en el bundle del portal) — sin una lista de UIDs permitidos, cualquiera podría llamar al endpoint de registro de Firebase Auth directamente (sin pasar por este portal) y terminar con un perfil de administrador autoprovisionado.
-
-**Primer administrador (Realtime Database central vacía):**
+No hay Cloud Functions ni Admin SDK en el frontend (ver `LIMITATIONS.md` — ambos implicarían costo o exponer credenciales privilegiadas), así que el **primer** administrador (cuando la Realtime Database central está vacía) se crea manualmente:
 
 1. [Firebase Console](https://console.firebase.google.com/) → proyecto `seam-middleware` → **Authentication** → **Users** → **Add user**. Crea el usuario con correo y contraseña y copia su **UID**.
-2. **Realtime Database** → pestaña de datos → crea manualmente `settings/allowedAdminUids/{uid}` con valor `true` (reemplaza `{uid}`).
-3. Inicia sesión con esa cuenta en el portal. En el primer login, la app crea automáticamente su perfil en `admins/{uid}`.
+2. **Realtime Database** → pestaña de datos → crea manualmente `settings/allowedAdminUids/{uid}` con valor `true` (reemplaza `{uid}`). Este paso existe porque la API key de Firebase es pública por diseño (va en el bundle del portal) — sin una lista de UIDs permitidos, cualquiera podría llamar al endpoint de registro de Firebase Auth directamente (sin pasar por este portal) y terminar con un perfil de administrador autoprovisionado.
+3. Inicia sesión con esa cuenta en el portal. En el primer login, la app crea automáticamente su perfil en `admins/{uid}` con `role: "admin"`.
+4. Para que esa cuenta sea el **administrador principal** (puede crear y revocar otras cuentas desde el portal, ver abajo): en Realtime Database, edita `admins/{uid}/role` de `"admin"` a `"owner"`. Solo debería haber un `owner`.
 
-**Administradores adicionales** (ya existe al menos uno):
+## Administradores adicionales (empleados)
 
-1. Repite el paso 1 de arriba.
-2. Cualquier administrador ya aprobado añade `settings/allowedAdminUids/{uid}: true` desde la Realtime Database — las Rules solo permiten esa escritura a quien ya tiene un perfil en `admins/`.
-3. La nueva cuenta inicia sesión normalmente; su perfil se crea solo.
+Con al menos un `owner` ya creado, el resto se maneja **desde el propio portal**, sin volver a tocar Firebase Console: página **Administradores** → **Crear administrador** → correo (y nombre opcional). El portal crea la cuenta de Firebase Auth (vía una instancia secundaria de Firebase, sin cerrar la sesión de quien la crea — ver `src/firebase/adminCreation.ts`), le escribe su perfil de inmediato con `role: "admin"`, y le envía un correo de restablecimiento de contraseña — nadie más llega a conocer su contraseña. Revocar el acceso es igual de directo: botón **Revocar acceso** en su fila (nunca disponible sobre la propia cuenta, para evitar un autobloqueo).
 
-Sin el paso 2, las Rules rechazan la escritura del perfil y el portal muestra "Esta cuenta no está autorizada".
+Solo un `owner` ve estos controles; el resto de administradores tiene la página en modo solo lectura, igual que antes.
 
 ## Scripts
 

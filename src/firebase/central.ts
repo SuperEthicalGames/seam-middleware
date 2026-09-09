@@ -3,7 +3,9 @@ import { getAuth } from 'firebase/auth'
 import { getDatabase } from 'firebase/database'
 
 // Firebase del PORTAL (backend central). NO confundir con los Firebase de los juegos.
-const firebaseConfig = {
+// Exportado (no solo local) porque adminCreation.ts necesita esta misma config para
+// levantar una segunda instancia de Firebase App — ver ese archivo para el porqué.
+export const firebaseConfig = {
   apiKey: 'AIzaSyAc1DWrW3EKirN9ym7vI-MROEceiKARSTo',
   authDomain: 'seam-middleware.firebaseapp.com',
   databaseURL: 'https://seam-middleware-default-rtdb.firebaseio.com',

@@ -30,6 +30,9 @@ export function toFriendlyMessage(error: unknown): string {
   if (code.includes('auth/user-disabled')) {
     return 'Esta cuenta ha sido deshabilitada. Contacte a un administrador.'
   }
+  if (code.includes('auth/email-already-in-use')) {
+    return 'Ya existe una cuenta con este correo.'
+  }
   if (code.includes('network') || code.includes('unavailable')) {
     return 'No hay conexión con el servidor. Verifique su conexión a internet e intente de nuevo.'
   }
