@@ -18,7 +18,7 @@ export function AuditLog() {
       sortValue: (e) => e.timestamp,
     },
     { key: 'adminEmail', header: 'Administrador', render: (e) => e.adminEmail, sortValue: (e) => e.adminEmail },
-    { key: 'game', header: 'Juego', render: (e) => GAME_CATALOG[e.game as GameId]?.displayName ?? e.game, sortValue: (e) => e.game },
+    { key: 'game', header: 'Juego', render: (e) => (e.game ? (GAME_CATALOG[e.game as GameId]?.displayName ?? e.game) : '—'), sortValue: (e) => e.game ?? '' },
     { key: 'serial', header: 'Serial', render: (e) => <span className="font-mono text-xs">{e.serial}</span> },
     {
       key: 'action',

@@ -1,5 +1,4 @@
-import { useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useAsync } from '@/hooks/useAsync'
 import { adapterRegistry } from '@/adapters'
 import { loadGameOverview } from '@/services/GamesService'
@@ -14,10 +13,17 @@ import type { NormalizedUser } from '@/types/game'
 
 type Tab = 'resumen' | 'usuarios' | 'seriales'
 
+const VALID_TABS: Tab[] = ['resumen', 'usuarios', 'seriales']
+
 export function GameDetail() {
   const { gameId } = useParams<{ gameId: string }>()
   const navigate = useNavigate()
-  const [tab, setTab] = useState<Tab>('resumen')
+  // La pestaña activa vive en la URL (?tab=usuarios), no en estado local — así
+  // "volver" desde el perfil de un paciente puede reconstruir exactamente esta
+  // misma pestaña en vez de reiniciar siempre en "resumen".
+  const [searchParams, setSearchParams] = useSearchParams()
+  const tabParam = searchParams.get('tab')
+  const tab: Tab = VALID_TABS.includes(tabParam as Tab) ? (tabParam as Tab) : 'resumen'
 
   const isValidGame = gameId === 'game1' || gameId === 'game2' || gameId === 'game3'
   const game = (isValidGame ? gameId : 'game1') as GameId
@@ -42,7 +48,14 @@ export function GameDetail() {
       key: 'action',
       header: 'Acción',
       render: (u) => (
-        <button className="btn-secondary" onClick={() => navigate(`/paciente/${encodeURIComponent(u.identifier)}`)}>
+        <button
+          className="btn-secondary"
+          onClick={() =>
+            navigate(`/paciente/${encodeURIComponent(u.identifier)}`, {
+              state: { from: { label: GAME_CATALOG[game].displayName, to: `/juegos/${game}?tab=usuarios` } },
+            })
+          }
+        >
           Ver perfil consolidado
         </button>
       ),
@@ -56,10 +69,10 @@ export function GameDetail() {
       </div>
 
       <div className="flex gap-1 border-b border-ink-200">
-        {(['resumen', 'usuarios', 'seriales'] as Tab[]).map((t) => (
+        {VALID_TABS.map((t) => (
           <button
             key={t}
-            onClick={() => setTab(t)}
+            onClick={() => setSearchParams(t === 'resumen' ? {} : { tab: t })}
             className={`border-b-2 px-4 py-2.5 text-sm font-medium capitalize transition-colors ${
               tab === t ? 'border-seam-600 text-seam-700' : 'border-transparent text-ink-500 hover:text-ink-800'
             }`}

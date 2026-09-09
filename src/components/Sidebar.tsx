@@ -79,12 +79,17 @@ function isNavItemActive(item: NavItem, pathname: string): boolean {
 
 export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   const location = useLocation()
+  // El perfil consolidado (/paciente/:id) se llega desde más de una sección —
+  // resalta la sección real de origen (pasada por location.state, ver Search.tsx /
+  // GameDetail.tsx) en vez de asumir siempre "Buscar paciente".
+  const fromTo = (location.state as { from?: { to: string } } | null)?.from?.to
+  const highlightPath = location.pathname.startsWith('/paciente/') && fromTo ? fromTo : location.pathname
 
   return (
     <>
       <nav className="flex-1 space-y-0.5 overflow-y-auto p-3">
         {NAV_ITEMS.map((item) => {
-          const isActive = isNavItemActive(item, location.pathname)
+          const isActive = isNavItemActive(item, highlightPath)
           return (
             <Link
               key={item.to}

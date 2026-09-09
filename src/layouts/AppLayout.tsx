@@ -18,10 +18,17 @@ function isGameId(value: string | undefined): value is GameId {
   return value === 'game1' || value === 'game2' || value === 'game3'
 }
 
-function getPageMeta(pathname: string, gameId: string | undefined): PageMeta {
+function getPageMeta(pathname: string, gameId: string | undefined, fromParent: HeaderParent | undefined): PageMeta {
   if (pathname === '/') return { title: 'Dashboard' }
   if (pathname.startsWith('/buscar')) return { title: 'Buscar paciente' }
-  if (pathname.startsWith('/paciente/')) return { title: 'Perfil consolidado', parent: { label: 'Buscar paciente', to: '/buscar' } }
+  if (pathname.startsWith('/paciente/')) {
+    // El perfil consolidado se llega tanto desde Buscar paciente como desde
+    // Juegos -> Usuarios -> Ver perfil -- quien navega hasta aquí pasa de dónde
+    // viene por location.state (ver Search.tsx / GameDetail.tsx). Sin ese state
+    // (enlace directo, recarga de página) se usa Buscar paciente como default,
+    // que sigue siendo razonable ahí.
+    return { title: 'Perfil consolidado', parent: fromParent ?? { label: 'Buscar paciente', to: '/buscar' } }
+  }
   if (pathname.startsWith('/juegos/')) {
     const title = isGameId(gameId) ? GAME_CATALOG[gameId].displayName : 'Detalle de juego'
     return { title, parent: { label: 'Juegos', to: '/juegos' } }
@@ -39,7 +46,8 @@ export function AppLayout() {
   const { gameId } = useParams<{ gameId?: string }>()
   const [mobileOpen, setMobileOpen] = useState(false)
   const mainRef = useRef<HTMLElement>(null)
-  const pageMeta = getPageMeta(location.pathname, gameId)
+  const fromParent = (location.state as { from?: HeaderParent } | null)?.from
+  const pageMeta = getPageMeta(location.pathname, gameId, fromParent)
 
   useEffect(() => {
     document.title = `${pageMeta.title} — SEAM Middleware`

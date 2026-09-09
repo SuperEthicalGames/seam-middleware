@@ -1,6 +1,6 @@
 import { GAME_IDS } from '@/config/games'
 import { adapterRegistry } from '@/adapters'
-import type { ConsolidatedProfile, GameLookupResult } from '@/types/game'
+import type { ConsolidatedProfile, GameId, GameLookupResult } from '@/types/game'
 import { toFriendlyMessage } from '@/utils/errors'
 
 /**
@@ -34,4 +34,52 @@ export async function findConsolidatedProfile(identifier: string): Promise<Conso
   )
 
   return { identifier: trimmed, results }
+}
+
+export interface PatientDirectoryRow {
+  identifier: string
+  games: GameId[]
+  hasActivity: boolean
+}
+
+export interface PatientDirectory {
+  patients: PatientDirectoryRow[]
+  /** Juegos que no se pudieron consultar — el listado puede estar incompleto. */
+  failedGames: GameId[]
+}
+
+/**
+ * A diferencia de findConsolidatedProfile (busca UN identificador puntual), esto trae
+ * TODOS los pacientes de los 3 juegos para explorar/filtrar sin conocer la cédula
+ * completa de antemano — dataset pequeño (decenas de usuarios por juego), lectura
+ * directa igual que Dashboard/GameDetail. Un mismo identificador que aparece en varios
+ * juegos se deduplica en una sola fila, listando en qué juegos aparece.
+ */
+export async function listAllPatients(): Promise<PatientDirectory> {
+  const byIdentifier = new Map<string, PatientDirectoryRow>()
+  const failedGames: GameId[] = []
+
+  await Promise.all(
+    GAME_IDS.map(async (gameId) => {
+      try {
+        const users = await adapterRegistry[gameId].getUsers()
+        for (const u of users) {
+          const existing = byIdentifier.get(u.identifier)
+          if (existing) {
+            if (!existing.games.includes(gameId)) existing.games.push(gameId)
+            existing.hasActivity = existing.hasActivity || u.hasActivity
+          } else {
+            byIdentifier.set(u.identifier, { identifier: u.identifier, games: [gameId], hasActivity: u.hasActivity })
+          }
+        }
+      } catch {
+        failedGames.push(gameId)
+      }
+    }),
+  )
+
+  return {
+    patients: Array.from(byIdentifier.values()).sort((a, b) => a.identifier.localeCompare(b.identifier)),
+    failedGames,
+  }
 }

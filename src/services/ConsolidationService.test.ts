@@ -1,13 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { findConsolidatedProfile } from './ConsolidationService'
+import { findConsolidatedProfile, listAllPatients } from './ConsolidationService'
 import { adapterRegistry } from '@/adapters'
 import { makeSession, makeUser } from '@/test/fixtures'
 
 vi.mock('@/adapters', () => ({
   adapterRegistry: {
-    game1: { findUserByIdentifier: vi.fn(), getUserSessions: vi.fn() },
-    game2: { findUserByIdentifier: vi.fn(), getUserSessions: vi.fn() },
-    game3: { findUserByIdentifier: vi.fn(), getUserSessions: vi.fn() },
+    game1: { findUserByIdentifier: vi.fn(), getUserSessions: vi.fn(), getUsers: vi.fn() },
+    game2: { findUserByIdentifier: vi.fn(), getUserSessions: vi.fn(), getUsers: vi.fn() },
+    game3: { findUserByIdentifier: vi.fn(), getUserSessions: vi.fn(), getUsers: vi.fn() },
   },
 }))
 
@@ -67,5 +67,45 @@ describe('findConsolidatedProfile', () => {
     await findConsolidatedProfile('900000001')
 
     expect(adapterRegistry.game1.getUserSessions).not.toHaveBeenCalled()
+  })
+})
+
+describe('listAllPatients', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('deduplica un mismo identificador visto en varios juegos en una sola fila', async () => {
+    vi.mocked(adapterRegistry.game1.getUsers).mockResolvedValueOnce([makeUser({ game: 'game1', identifier: '900000001', hasActivity: false })])
+    vi.mocked(adapterRegistry.game2.getUsers).mockResolvedValueOnce([makeUser({ game: 'game2', identifier: '900000001', hasActivity: true })])
+    vi.mocked(adapterRegistry.game3.getUsers).mockResolvedValueOnce([])
+
+    const { patients } = await listAllPatients()
+
+    expect(patients).toHaveLength(1)
+    expect(patients[0].games.sort()).toEqual(['game1', 'game2'])
+    // Si CUALQUIER juego marca actividad, la fila combinada la refleja.
+    expect(patients[0].hasActivity).toBe(true)
+  })
+
+  it('un juego que falla no rompe el listado — se reporta en failedGames', async () => {
+    vi.mocked(adapterRegistry.game1.getUsers).mockResolvedValueOnce([makeUser({ game: 'game1', identifier: 'id1' })])
+    vi.mocked(adapterRegistry.game2.getUsers).mockRejectedValueOnce({ code: 'PERMISSION_DENIED' })
+    vi.mocked(adapterRegistry.game3.getUsers).mockResolvedValueOnce([])
+
+    const { patients, failedGames } = await listAllPatients()
+
+    expect(patients).toHaveLength(1)
+    expect(failedGames).toEqual(['game2'])
+  })
+
+  it('ordena alfabéticamente por identificador', async () => {
+    vi.mocked(adapterRegistry.game1.getUsers).mockResolvedValueOnce([makeUser({ identifier: '900000002' }), makeUser({ identifier: '900000001' })])
+    vi.mocked(adapterRegistry.game2.getUsers).mockResolvedValueOnce([])
+    vi.mocked(adapterRegistry.game3.getUsers).mockResolvedValueOnce([])
+
+    const { patients } = await listAllPatients()
+
+    expect(patients.map((p) => p.identifier)).toEqual(['900000001', '900000002'])
   })
 })
