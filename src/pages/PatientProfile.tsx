@@ -23,10 +23,15 @@ export function PatientProfile() {
 
   const { data, loading, error, reload } = useAsync(() => findConsolidatedProfile(identifier), [identifier])
 
-  const totalFilteredSessions = useMemo(() => {
-    if (!data) return 0
-    return data.results.reduce((acc, r) => acc + applySessionFilters(r.sessions, filters).length, 0)
+  // Cada resultado se filtra una sola vez aquí y se reutiliza abajo (conteo total,
+  // resumen de rendimiento y tabla de sesiones) — antes se llamaba a
+  // applySessionFilters por separado en cada uno de esos 3 lugares por juego.
+  const filteredResults = useMemo(() => {
+    if (!data) return []
+    return data.results.map((r) => ({ ...r, filteredSessions: applySessionFilters(r.sessions, filters) }))
   }, [data, filters])
+
+  const totalFilteredSessions = useMemo(() => filteredResults.reduce((acc, r) => acc + r.filteredSessions.length, 0), [filteredResults])
 
   function handleExport() {
     if (!data) return
@@ -75,7 +80,7 @@ export function PatientProfile() {
 
       <PatientConclusions profile={data} filters={filters} />
 
-      {data.results.map((r) => (
+      {filteredResults.map((r) => (
         <Card key={r.game}>
           <div className="mb-4 flex items-center justify-between">
             <h3 className="text-sm font-semibold text-ink-800">{GAME_CATALOG[r.game].displayName}</h3>
@@ -88,8 +93,8 @@ export function PatientProfile() {
           {r.state === 'ERROR' && <ErrorState message={r.errorMessage ?? `No fue posible consultar ${GAME_CATALOG[r.game].displayName}.`} onRetry={reload} />}
           {r.state === 'FOUND' && (
             <>
-              <PatientPerformanceSummary sessions={applySessionFilters(r.sessions, filters)} game={r.game} />
-              <SessionsTable sessions={applySessionFilters(r.sessions, filters)} />
+              <PatientPerformanceSummary sessions={r.filteredSessions} game={r.game} />
+              <SessionsTable sessions={r.filteredSessions} />
             </>
           )}
         </Card>

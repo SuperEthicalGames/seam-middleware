@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import type { ConsolidatedProfile } from '@/types/game'
 import type { SessionFilters } from '@/utils/sessionFilters'
 import { computePatientConclusions } from '@/utils/patientConclusions'
@@ -6,7 +7,10 @@ import { GAME_CATALOG } from '@/config/games'
 import { Card } from './Card'
 
 export function PatientConclusions({ profile, filters }: { profile: ConsolidatedProfile; filters: SessionFilters }) {
-  const c = computePatientConclusions(profile, filters)
+  // computePatientConclusions filtra y reordena las sesiones de los 3 juegos —
+  // sin memoizar, se repetía en cada render (p.ej. cada tecla al escribir en el
+  // filtro de ejercicio), aunque `profile` no hubiera cambiado.
+  const c = useMemo(() => computePatientConclusions(profile, filters), [profile, filters])
 
   if (c.totalSessions === 0) return null
 
