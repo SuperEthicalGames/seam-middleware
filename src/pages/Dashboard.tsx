@@ -6,6 +6,8 @@ import { ErrorState, StatCardSkeleton, ChartCardSkeleton } from '@/components/St
 import { SessionsByDateChart } from '@/charts/SessionsByDateChart'
 import { SerialsStatusChart } from '@/charts/SerialsStatusChart'
 import { UsersByGameChart } from '@/charts/UsersByGameChart'
+import { DifficultyDistributionChart } from '@/charts/DifficultyDistributionChart'
+import { TopPatientsChart } from '@/charts/TopPatientsChart'
 import { GAME_CATALOG } from '@/config/games'
 
 export function Dashboard() {
@@ -33,6 +35,7 @@ export function Dashboard() {
   }
 
   const totalUsers = data.summaries.reduce((acc, s) => acc + s.totalUsers, 0)
+  const totalSessions = data.summaries.reduce((acc, s) => acc + s.totalSessions, 0)
   const totalActiveSerials = data.summaries.reduce((acc, s) => acc + s.activeSerials, 0)
   const totalSerials = data.summaries.reduce((acc, s) => acc + s.totalSerials, 0)
   const gamesWithErrors = data.summaries.filter((s) => s.state === 'error')
@@ -47,28 +50,43 @@ export function Dashboard() {
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard label="Pacientes registrados (3 juegos)" value={totalUsers} hint="Suma de usuarios por juego, sin deduplicar por cédula" />
-        <StatCard label="Seriales activos" value={`${totalActiveSerials} / ${totalSerials}`} hint="Total activos sobre total de seriales" />
-        <StatCard
-          label="Juegos consultados"
-          value={`${data.summaries.length - gamesWithErrors.length} / ${data.summaries.length}`}
-          hint={gamesWithErrors.length > 0 ? 'Uno o más juegos con error de conexión' : 'Todos disponibles'}
-        />
+        <StatCard label="Sesiones registradas" value={totalSessions} hint="Partidas jugadas en total, las 3 bases" />
         <StatCard
           label="Usuarios con actividad"
           value={data.summaries.reduce((acc, s) => acc + s.usersWithActivity, 0)}
           hint="Usuarios con al menos una sesión registrada"
         />
+        <StatCard label="Seriales activos" value={`${totalActiveSerials} / ${totalSerials}`} hint="Total activos sobre total de seriales" />
       </div>
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <Card>
-          <h2 className="mb-4 text-sm font-semibold text-ink-800">Usuarios por juego</h2>
-          <UsersByGameChart summaries={data.summaries} />
-        </Card>
-        <Card>
-          <h2 className="mb-4 text-sm font-semibold text-ink-800">Seriales por estado</h2>
-          <SerialsStatusChart summaries={data.summaries} />
-        </Card>
+      <div>
+        <h2 className="mb-3 text-base font-semibold text-ink-900">Rendimiento de pacientes</h2>
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          <Card>
+            <h3 className="mb-1 text-sm font-semibold text-ink-800">Pacientes más activos</h3>
+            <p className="mb-4 text-xs text-ink-400">Top por número de sesiones jugadas, independiente por juego.</p>
+            <TopPatientsChart patients={data.topPatients} />
+          </Card>
+          <Card>
+            <h3 className="mb-1 text-sm font-semibold text-ink-800">Distribución de dificultad</h3>
+            <p className="mb-4 text-xs text-ink-400">Sesiones jugadas por nivel de dificultad, acumulado de los 3 juegos.</p>
+            <DifficultyDistributionChart distribution={data.difficultyDistribution} />
+          </Card>
+        </div>
+      </div>
+
+      <div>
+        <h2 className="mb-3 text-base font-semibold text-ink-900">Estado del sistema</h2>
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          <Card>
+            <h3 className="mb-4 text-sm font-semibold text-ink-800">Usuarios por juego</h3>
+            <UsersByGameChart summaries={data.summaries} />
+          </Card>
+          <Card>
+            <h3 className="mb-4 text-sm font-semibold text-ink-800">Seriales por estado</h3>
+            <SerialsStatusChart summaries={data.summaries} />
+          </Card>
+        </div>
       </div>
 
       <Card>
@@ -90,6 +108,10 @@ export function Dashboard() {
                   <div className="flex justify-between">
                     <dt>Usuarios</dt>
                     <dd className="font-medium text-ink-800">{s.totalUsers}</dd>
+                  </div>
+                  <div className="flex justify-between">
+                    <dt>Sesiones</dt>
+                    <dd className="font-medium text-ink-800">{s.totalSessions}</dd>
                   </div>
                   <div className="flex justify-between">
                     <dt>Seriales activos</dt>

@@ -8,6 +8,7 @@ import { Badge } from '@/components/Badge'
 import { ErrorState, TableSkeleton, EmptyState } from '@/components/States'
 import { FilterBar } from '@/components/FilterBar'
 import { SessionsTable } from '@/components/SessionsTable'
+import { PatientPerformanceSummary } from '@/components/PatientPerformanceSummary'
 import { EMPTY_FILTERS, applySessionFilters } from '@/utils/sessionFilters'
 import { generatePatientReportPdf } from '@/reports/PatientReport'
 import { useAuth } from '@/auth/AuthContext'
@@ -82,7 +83,12 @@ export function PatientProfile() {
 
           {r.state === 'NOT_FOUND' && <EmptyState title="No se encontró este paciente en este juego." />}
           {r.state === 'ERROR' && <ErrorState message={r.errorMessage ?? `No fue posible consultar ${GAME_CATALOG[r.game].displayName}.`} onRetry={reload} />}
-          {r.state === 'FOUND' && <SessionsTable sessions={applySessionFilters(r.sessions, filters)} />}
+          {r.state === 'FOUND' && (
+            <>
+              <PatientPerformanceSummary sessions={applySessionFilters(r.sessions, filters)} game={r.game} />
+              <SessionsTable sessions={applySessionFilters(r.sessions, filters)} />
+            </>
+          )}
         </Card>
       ))}
     </div>
