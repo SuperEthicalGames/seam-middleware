@@ -2,7 +2,14 @@ import { GAME_IDS } from '@/config/games'
 import { adapterRegistry } from '@/adapters'
 import type { GameId, NormalizedDifficulty, NormalizedSession, NormalizedUser } from '@/types/game'
 import { toFriendlyMessage } from '@/utils/errors'
-import { computePopulationExercisePerformance, computePerformanceDistribution, type PerformanceBand, type PopulationExercisePerformance } from '@/utils/populationPerformance'
+import { computeDifficultyDistribution } from '@/utils/patientStats'
+import {
+  computePopulationExercisePerformance,
+  computePerformanceDistribution,
+  computePerformanceDistributionByGame,
+  type PerformanceBand,
+  type PopulationExercisePerformance,
+} from '@/utils/populationPerformance'
 
 export interface GameSummary {
   game: GameId
@@ -28,12 +35,16 @@ export interface DashboardData {
   /** Distribución de dificultad agregada de las 3 bases — sí es comparable entre juegos
    * (a diferencia de `score`, que tiene escalas incompatibles, ver DATA_MAPPING.md sección 7). */
   difficultyDistribution: Record<NormalizedDifficulty, number>
+  /** Misma distribución, separada por juego — para el filtro "Juego" del gráfico en el dashboard. */
+  difficultyDistributionByGame: Record<GameId, Record<NormalizedDifficulty, number>>
   /** Pacientes con más sesiones registradas, por juego (el eje central del portal: rendimiento del paciente). */
   topPatients: TopPatient[]
   /** Rendimiento promedio por ejercicio, agregando las sesiones de todos los pacientes de cada juego. */
   exercisePerformance: PopulationExercisePerformance[]
   /** Dónde se concentran (bajo/medio/alto) todas las sesiones con puntaje normalizado conocido. */
   performanceDistribution: Record<PerformanceBand, number>
+  /** Misma distribución, separada por juego — para el filtro "Juego" del gráfico en el dashboard. */
+  performanceDistributionByGame: Record<GameId, Record<PerformanceBand, number>>
 }
 
 /**
@@ -113,15 +124,24 @@ export async function loadDashboardData(): Promise<DashboardData> {
   summaries.sort((a, b) => GAME_IDS.indexOf(a.game) - GAME_IDS.indexOf(b.game))
   topPatients.sort((a, b) => b.sessionCount - a.sessionCount)
 
+  const difficultyDistributionByGame = {} as Record<GameId, Record<NormalizedDifficulty, number>>
+  for (const game of GAME_IDS) difficultyDistributionByGame[game] = computeDifficultyDistribution(sessionsByGame[game])
+
   const exercisePerformance = computePopulationExercisePerformance(sessionsByGame)
   const performanceDistribution = computePerformanceDistribution(sessionsByGame)
+  const performanceDistributionByGame = computePerformanceDistributionByGame(sessionsByGame)
 
   return {
     summaries,
     sessionsByDate,
     difficultyDistribution,
-    topPatients: topPatients.slice(0, 8),
+    difficultyDistributionByGame,
+    // Ya viene acotado a top-5 por juego (arriba); sin cortar a un top global para que el
+    // filtro "Juego" del gráfico pueda mostrar el top de un juego específico sin perderlo
+    // si otro juego domina el ranking combinado.
+    topPatients,
     exercisePerformance,
     performanceDistribution,
+    performanceDistributionByGame,
   }
 }

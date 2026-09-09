@@ -1,7 +1,9 @@
+import { useState } from 'react'
 import { useAsync } from '@/hooks/useAsync'
 import { loadDashboardData } from '@/services/DashboardService'
 import { StatCard, Card } from '@/components/Card'
 import { Badge } from '@/components/Badge'
+import { GameFilterSelect, type GameFilter } from '@/components/GameFilterSelect'
 import { ErrorState, StatCardSkeleton, ChartCardSkeleton } from '@/components/States'
 import { SessionsByDateChart } from '@/charts/SessionsByDateChart'
 import { SerialsStatusChart } from '@/charts/SerialsStatusChart'
@@ -14,6 +16,8 @@ import { GAME_CATALOG } from '@/config/games'
 
 export function Dashboard() {
   const { data, loading, error, reload } = useAsync(() => loadDashboardData(), [])
+  const [difficultyGameFilter, setDifficultyGameFilter] = useState<GameFilter>('all')
+  const [performanceGameFilter, setPerformanceGameFilter] = useState<GameFilter>('all')
 
   if (loading) {
     return (
@@ -41,6 +45,8 @@ export function Dashboard() {
   const totalActiveSerials = data.summaries.reduce((acc, s) => acc + s.activeSerials, 0)
   const totalSerials = data.summaries.reduce((acc, s) => acc + s.totalSerials, 0)
   const gamesWithErrors = data.summaries.filter((s) => s.state === 'error')
+  const difficultyDistribution = difficultyGameFilter === 'all' ? data.difficultyDistribution : data.difficultyDistributionByGame[difficultyGameFilter]
+  const performanceDistribution = performanceGameFilter === 'all' ? data.performanceDistribution : data.performanceDistributionByGame[performanceGameFilter]
 
   return (
     <div className="space-y-6">
@@ -71,8 +77,11 @@ export function Dashboard() {
           </Card>
           <Card>
             <h3 className="mb-1 text-sm font-semibold text-ink-800">Distribución de dificultad</h3>
-            <p className="mb-4 text-xs text-ink-400">Sesiones jugadas por nivel de dificultad, acumulado de los 3 juegos.</p>
-            <DifficultyDistributionChart distribution={data.difficultyDistribution} />
+            <p className="mb-4 text-xs text-ink-400">Sesiones jugadas por nivel de dificultad.</p>
+            <div className="mb-4">
+              <GameFilterSelect id="difficulty-distribution-game" value={difficultyGameFilter} onChange={setDifficultyGameFilter} />
+            </div>
+            <DifficultyDistributionChart distribution={difficultyDistribution} />
           </Card>
         </div>
       </div>
@@ -91,8 +100,11 @@ export function Dashboard() {
           </Card>
           <Card>
             <h3 className="mb-1 text-sm font-semibold text-ink-800">Distribución general de rendimiento</h3>
-            <p className="mb-4 text-xs text-ink-400">Todas las sesiones de los 3 juegos, según su puntaje normalizado.</p>
-            <PerformanceDistributionChart distribution={data.performanceDistribution} />
+            <p className="mb-4 text-xs text-ink-400">Sesiones según su puntaje normalizado.</p>
+            <div className="mb-4">
+              <GameFilterSelect id="performance-distribution-game" value={performanceGameFilter} onChange={setPerformanceGameFilter} />
+            </div>
+            <PerformanceDistributionChart distribution={performanceDistribution} />
           </Card>
         </div>
       </div>

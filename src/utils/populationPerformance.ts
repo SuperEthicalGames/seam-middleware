@@ -47,6 +47,16 @@ function bandFor(percent: number): PerformanceBand {
   return 'alto'
 }
 
+function distributionForSessions(sessions: NormalizedSession[], game: GameId): Record<PerformanceBand, number> {
+  const distribution: Record<PerformanceBand, number> = { bajo: 0, medio: 0, alto: 0 }
+  for (const s of sessions) {
+    const percent = scoreToPercent(game, s.exercise, s.score)
+    if (percent === null) continue
+    distribution[bandFor(percent)] += 1
+  }
+  return distribution
+}
+
 /**
  * Distribución de todas las sesiones (de los 3 juegos) según su puntaje normalizado
  * (% de una partida de referencia, ver scoreReference.ts) — da una vista general de
@@ -55,11 +65,17 @@ function bandFor(percent: number): PerformanceBand {
 export function computePerformanceDistribution(sessionsByGame: Record<GameId, NormalizedSession[]>): Record<PerformanceBand, number> {
   const distribution: Record<PerformanceBand, number> = { bajo: 0, medio: 0, alto: 0 }
   for (const game of Object.keys(sessionsByGame) as GameId[]) {
-    for (const s of sessionsByGame[game]) {
-      const percent = scoreToPercent(game, s.exercise, s.score)
-      if (percent === null) continue
-      distribution[bandFor(percent)] += 1
-    }
+    const perGame = distributionForSessions(sessionsByGame[game], game)
+    for (const band of Object.keys(distribution) as PerformanceBand[]) distribution[band] += perGame[band]
   }
   return distribution
+}
+
+/** Misma distribución, pero separada por juego — para poder filtrar el gráfico del dashboard por juego. */
+export function computePerformanceDistributionByGame(sessionsByGame: Record<GameId, NormalizedSession[]>): Record<GameId, Record<PerformanceBand, number>> {
+  const result = {} as Record<GameId, Record<PerformanceBand, number>>
+  for (const game of Object.keys(sessionsByGame) as GameId[]) {
+    result[game] = distributionForSessions(sessionsByGame[game], game)
+  }
+  return result
 }
