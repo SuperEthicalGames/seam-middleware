@@ -9,36 +9,42 @@ export interface GameOverview {
   errorMessage?: string
   totalUsers: number
   usersWithActivity: number
+  totalSessions: number
   totalSerials: number
   activeSerials: number
 }
 
-/** Versión ligera (sin sesiones) para listados — usada por la página Juegos. */
+/** Usada por la página Juegos y el resumen de GameDetail — mismo dato que el Dashboard
+ * muestra para cada juego (sesiones incluidas), para que las 3 vistas se lean igual. */
+export async function loadGameOverview(game: GameId): Promise<GameOverview> {
+  try {
+    const [users, serials] = await Promise.all([adapterRegistry[game].getUsers(), adapterRegistry[game].getSerials()])
+    const usersWithActivity = users.filter((u) => u.hasActivity)
+    const sessionsPerUser = await Promise.all(usersWithActivity.map((u) => adapterRegistry[game].getUserSessions(u.uid).catch(() => [])))
+
+    return {
+      game,
+      state: 'ok',
+      totalUsers: users.length,
+      usersWithActivity: usersWithActivity.length,
+      totalSessions: sessionsPerUser.reduce((acc, s) => acc + s.length, 0),
+      totalSerials: serials.length,
+      activeSerials: serials.filter((s) => s.active).length,
+    }
+  } catch (error) {
+    return {
+      game,
+      state: 'error',
+      errorMessage: toFriendlyMessage(error),
+      totalUsers: 0,
+      usersWithActivity: 0,
+      totalSessions: 0,
+      totalSerials: 0,
+      activeSerials: 0,
+    }
+  }
+}
+
 export async function loadGamesOverview(): Promise<GameOverview[]> {
-  const overviews = await Promise.all(
-    GAME_IDS.map(async (game): Promise<GameOverview> => {
-      try {
-        const [users, serials] = await Promise.all([adapterRegistry[game].getUsers(), adapterRegistry[game].getSerials()])
-        return {
-          game,
-          state: 'ok',
-          totalUsers: users.length,
-          usersWithActivity: users.filter((u) => u.hasActivity).length,
-          totalSerials: serials.length,
-          activeSerials: serials.filter((s) => s.active).length,
-        }
-      } catch (error) {
-        return {
-          game,
-          state: 'error',
-          errorMessage: toFriendlyMessage(error),
-          totalUsers: 0,
-          usersWithActivity: 0,
-          totalSerials: 0,
-          activeSerials: 0,
-        }
-      }
-    }),
-  )
-  return overviews
+  return Promise.all(GAME_IDS.map(loadGameOverview))
 }

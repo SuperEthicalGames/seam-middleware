@@ -30,8 +30,7 @@ export function Admins() {
       <Card>
         <h2 className="mb-1 text-sm font-semibold text-ink-800">Administradores del portal</h2>
         <p className="text-sm text-ink-500">
-          Listado de solo lectura. Las cuentas nuevas se crean desde Firebase Console por quien administre el proyecto — ver{' '}
-          <span className="font-medium">LIMITATIONS.md</span> para el detalle de esta restricción.
+          Listado de solo lectura. Para crear una cuenta nueva, contacte a quien administra el proyecto de Firebase de SEAM.
         </p>
       </Card>
       <Card>

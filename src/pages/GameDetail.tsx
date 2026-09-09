@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useAsync } from '@/hooks/useAsync'
 import { adapterRegistry } from '@/adapters'
+import { loadGameOverview } from '@/services/GamesService'
 import { GAME_CATALOG } from '@/config/games'
 import type { GameId } from '@/types/game'
 import { Card, StatCard } from '@/components/Card'
@@ -21,6 +22,7 @@ export function GameDetail() {
   const isValidGame = gameId === 'game1' || gameId === 'game2' || gameId === 'game3'
   const game = (isValidGame ? gameId : 'game1') as GameId
 
+  const overviewState = useAsync(() => loadGameOverview(game), [game])
   const usersState = useAsync(() => adapterRegistry[game].getUsers(), [game])
   const serialsState = useAsync(() => adapterRegistry[game].getSerials(), [game])
 
@@ -47,13 +49,10 @@ export function GameDetail() {
     },
   ]
 
-  const activeSerials = serialsState.data?.filter((s) => s.active).length ?? 0
-
   return (
     <div className="space-y-6">
       <div>
         <h2 className="text-xl font-semibold text-ink-900">{GAME_CATALOG[game].displayName}</h2>
-        <p className="text-sm text-ink-500">{GAME_CATALOG[game].databaseUrl}</p>
       </div>
 
       <div className="flex gap-1 border-b border-ink-200">
@@ -71,17 +70,20 @@ export function GameDetail() {
       </div>
 
       {tab === 'resumen' &&
-        (usersState.loading || serialsState.loading ? (
+        (overviewState.loading ? (
           <Card>
             <TableSkeleton rows={3} cols={1} />
           </Card>
-        ) : usersState.error || serialsState.error ? (
-          <ErrorState message={usersState.error ?? serialsState.error ?? 'Error al cargar el resumen.'} onRetry={() => { usersState.reload(); serialsState.reload() }} />
+        ) : overviewState.error || !overviewState.data ? (
+          <ErrorState message={overviewState.error ?? overviewState.data?.errorMessage ?? 'Error al cargar el resumen.'} onRetry={overviewState.reload} />
+        ) : overviewState.data.state === 'error' ? (
+          <ErrorState message={overviewState.data.errorMessage ?? `No fue posible consultar ${GAME_CATALOG[game].displayName}.`} onRetry={overviewState.reload} />
         ) : (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <StatCard label="Usuarios registrados" value={usersState.data?.length ?? 0} />
-            <StatCard label="Usuarios con actividad" value={usersState.data?.filter((u) => u.hasActivity).length ?? 0} />
-            <StatCard label="Seriales activos" value={`${activeSerials} / ${serialsState.data?.length ?? 0}`} />
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
+            <StatCard label="Usuarios registrados" value={overviewState.data.totalUsers} />
+            <StatCard label="Usuarios con actividad" value={overviewState.data.usersWithActivity} />
+            <StatCard label="Sesiones registradas" value={overviewState.data.totalSessions} />
+            <StatCard label="Seriales activos" value={`${overviewState.data.activeSerials} / ${overviewState.data.totalSerials}`} />
           </div>
         ))}
 

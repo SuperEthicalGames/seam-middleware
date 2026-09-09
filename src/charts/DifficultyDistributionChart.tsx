@@ -4,13 +4,17 @@ import { EmptyState } from '@/components/States'
 import { formatDifficultyLabel } from '@/utils/normalize'
 import type { NormalizedDifficulty } from '@/types/game'
 
-// Mismos colores que las badges de dificultad en las tablas (SessionsTable): fácil=verde,
-// media=azul, difícil=rojo — para que el dashboard y el detalle de paciente se lean igual.
+// Mismo family de color que las badges de dificultad en las tablas (SessionsTable ->
+// Badge tone="success"/"info"/"danger"/"neutral"): fácil=teal de marca, media=azul,
+// difícil=rojo, desconocida=gris ink — para que el dashboard y el perfil de paciente
+// se lean igual. Antes esto reusaba por error STATUS_COLORS.good/critical (verde/rojo
+// genéricos de "seriales activos") y el azul categórico de Amazonas — colores con un
+// significado distinto en otros gráficos, no el teal/azul/rojo reales de las badges.
 const DIFFICULTY_COLORS: Record<NormalizedDifficulty, string> = {
-  easy: '#0ca30c',
-  medium: '#2a78d6',
-  hard: '#d03b3b',
-  unknown: '#898781',
+  easy: '#00b398', // seam-600 — el teal de marca, igual family que Badge tone="success"
+  medium: '#2563eb', // blue-600 — igual family que Badge tone="info"
+  hard: '#dc2626', // red-600 — igual family que Badge tone="danger"
+  unknown: '#59717b', // ink-500 — igual family que Badge tone="neutral"
 }
 
 const ORDER: NormalizedDifficulty[] = ['easy', 'medium', 'hard', 'unknown']

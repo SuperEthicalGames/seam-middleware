@@ -49,6 +49,10 @@ export function GamesList() {
                 <dd className="font-medium text-ink-900">{g.usersWithActivity}</dd>
               </div>
               <div className="flex justify-between">
+                <dt>Sesiones registradas</dt>
+                <dd className="font-medium text-ink-900">{g.totalSessions}</dd>
+              </div>
+              <div className="flex justify-between">
                 <dt>Seriales activos</dt>
                 <dd className="font-medium text-ink-900">
                   {g.activeSerials} / {g.totalSerials}
