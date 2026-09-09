@@ -5,7 +5,7 @@ Despliegue 100% gratuito, dividido en dos partes independientes:
 - **Hosting estático** (el sitio en sí): **GitHub Pages**, vía GitHub Actions (`.github/workflows/deploy.yml`) — se publica solo con `git push` a `main`, sin CLI ni paso manual.
 - **Backend** (Auth + Realtime Database central, proyecto `seam-middleware`): sigue siendo **Firebase**, plan Spark. No requiere activar Blaze.
 
-> Antes se publicaba también en Firebase Hosting (`firebase deploy --only hosting`). El cliente pidió mover el hosting a GitHub Pages; `firebase.json` conserva el bloque `hosting` sin usarse activamente — el único comando de Firebase CLI que sigue haciendo falta es el de las Rules (paso 3). Ver el commit "Prepare the app for GitHub Pages hosting" para el detalle de qué cambió en el código (`HashRouter`, `base` de Vite, rutas de imágenes).
+> Antes se publicaba también en Firebase Hosting (`firebase deploy --only hosting`). El cliente pidió mover el hosting a GitHub Pages; el bloque `hosting` de `firebase.json` ya se eliminó (quedaba sin usarse y podía confundir a quien lo leyera) — el único comando de Firebase CLI que sigue haciendo falta es el de las Rules (paso 3). Ver el commit "Prepare the app for GitHub Pages hosting" para el detalle de qué cambió en el código (`HashRouter`, `base` de Vite, rutas de imágenes).
 
 ## 1. Requisitos previos
 
