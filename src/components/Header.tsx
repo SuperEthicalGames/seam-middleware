@@ -1,8 +1,13 @@
 import { useState, useRef, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/auth/AuthContext'
 
-export function Header({ title, onMenuClick }: { title: string; onMenuClick?: () => void }) {
+export interface HeaderParent {
+  label: string
+  to: string
+}
+
+export function Header({ title, parent, onMenuClick }: { title: string; parent?: HeaderParent; onMenuClick?: () => void }) {
   const { profile, signOut } = useAuth()
   const navigate = useNavigate()
   const [open, setOpen] = useState(false)
@@ -26,7 +31,14 @@ export function Header({ title, onMenuClick }: { title: string; onMenuClick?: ()
             <path d="M4 6h16M4 12h16M4 18h16" strokeLinecap="round" />
           </svg>
         </button>
-        <h1 className="text-lg font-semibold text-ink-900">{title}</h1>
+        <div>
+          {parent && (
+            <Link to={parent.to} className="mb-0.5 flex items-center gap-1 text-xs font-medium text-ink-400 transition-colors hover:text-seam-700">
+              <span aria-hidden="true">←</span> {parent.label}
+            </Link>
+          )}
+          <h1 className="text-lg font-semibold text-ink-900">{title}</h1>
+        </div>
       </div>
 
       <div className="relative" ref={menuRef}>

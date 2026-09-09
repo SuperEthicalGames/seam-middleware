@@ -1,10 +1,14 @@
-import { NavLink } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { Logo } from './Logo'
 
 interface NavItem {
   to: string
   label: string
   icon: (props: { className?: string }) => JSX.Element
+  /** Rutas que conceptualmente pertenecen a esta sección aunque no cuelguen de `to` en
+   * la URL — ej. el perfil consolidado de un paciente (/paciente/:id) se llega desde
+   * "Buscar paciente" pero vive en su propio path, sin esto quedaba sin ítem activo. */
+  matchAlso?: string[]
 }
 
 function IconDashboard({ className }: { className?: string }) {
@@ -60,45 +64,50 @@ function IconShield({ className }: { className?: string }) {
 
 const NAV_ITEMS: NavItem[] = [
   { to: '/', label: 'Dashboard', icon: IconDashboard },
-  { to: '/buscar', label: 'Buscar paciente', icon: IconSearch },
+  { to: '/buscar', label: 'Buscar paciente', icon: IconSearch, matchAlso: ['/paciente'] },
   { to: '/juegos', label: 'Juegos', icon: IconGames },
   { to: '/seriales', label: 'Seriales', icon: IconKey },
   { to: '/administradores', label: 'Administradores', icon: IconUsers },
   { to: '/auditoria', label: 'Auditoría', icon: IconShield },
 ]
 
+function isNavItemActive(item: NavItem, pathname: string): boolean {
+  if (item.to === '/') return pathname === '/'
+  if (pathname === item.to || pathname.startsWith(`${item.to}/`)) return true
+  return item.matchAlso?.some((p) => pathname === p || pathname.startsWith(`${p}/`)) ?? false
+}
+
 export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
+  const location = useLocation()
+
   return (
     <>
       <nav className="flex-1 space-y-0.5 overflow-y-auto p-3">
-        {NAV_ITEMS.map((item) => (
-          <NavLink
-            key={item.to}
-            to={item.to}
-            end={item.to === '/'}
-            onClick={onNavigate}
-            className={({ isActive }) =>
-              `group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-150 ${
+        {NAV_ITEMS.map((item) => {
+          const isActive = isNavItemActive(item, location.pathname)
+          return (
+            <Link
+              key={item.to}
+              to={item.to}
+              onClick={onNavigate}
+              aria-current={isActive ? 'page' : undefined}
+              className={`group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-150 ${
                 isActive ? 'bg-seam-50 text-seam-800' : 'text-ink-500 hover:bg-ink-50 hover:text-ink-900'
-              }`
-            }
-          >
-            {({ isActive }) => (
-              <>
-                <span
-                  className={`absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-full bg-seam-600 transition-all duration-150 ${
-                    isActive ? 'opacity-100' : 'opacity-0'
-                  }`}
-                  aria-hidden="true"
-                />
-                <item.icon
-                  className={`h-5 w-5 shrink-0 transition-colors duration-150 ${isActive ? 'text-seam-600' : 'text-ink-400 group-hover:text-ink-600'}`}
-                />
-                {item.label}
-              </>
-            )}
-          </NavLink>
-        ))}
+              }`}
+            >
+              <span
+                className={`absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-full bg-seam-600 transition-all duration-150 ${
+                  isActive ? 'opacity-100' : 'opacity-0'
+                }`}
+                aria-hidden="true"
+              />
+              <item.icon
+                className={`h-5 w-5 shrink-0 transition-colors duration-150 ${isActive ? 'text-seam-600' : 'text-ink-400 group-hover:text-ink-600'}`}
+              />
+              {item.label}
+            </Link>
+          )
+        })}
       </nav>
       <div className="border-t border-ink-100 p-4 text-[11px] leading-relaxed text-ink-400">
         SEAM Middleware v0.1
