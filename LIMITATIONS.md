@@ -69,25 +69,23 @@ Antes de considerar el MVP funcional se verificó en un navegador real, contra l
 - Búsqueda por cédula: una cédula real presente en los 3 juegos devuelve "Encontrado" en los 3, con el conteo de sesiones correcto por juego (14/12/0).
 - Perfil consolidado: filtro por dificultad reduce correctamente de 26 a 8 sesiones; tablas, badges, paginación y ordenamiento por columna funcionan.
 - Exportar PDF: genera el documento sin errores con datos reales multi-juego y filtros aplicados.
-- Módulo Seriales: la lista refleja el estado real (activo/inactivo) de cada serial; el diálogo de confirmación ("¿Está seguro de que desea desactivar...?") aparece correctamente antes de cualquier escritura.
+- Módulo Seriales: la lista refleja el estado real (activo/inactivo) de cada serial; el diálogo de confirmación ("¿Está seguro de que desea desactivar...?") aparece correctamente antes de cualquier escritura. La escritura real (activar/desactivar) y el registro de auditoría se verificaron de punta a punta después de publicar las Rules de la base central — ver sección 10.
 
 **No se probó en vivo** (deliberadamente, para no modificar datos de producción sin autorización explícita): la escritura real de `serials` y su registro en auditoría, el flujo completo de creación de la primera cuenta admin (requiere acceso a Firebase Console del cliente), y la entrega del correo de recuperación de contraseña. La lógica de estas tres rutas se revisó por código y sigue el mismo patrón ya validado (mismo `update()` usado y verificado para lectura, mismo `AuthService` de Firebase).
 
-## 10. ACCIÓN REQUERIDA — Rules de la base central sin publicar
+## 10. Rules de la base central — publicadas y verificadas (RESUELTO)
 
-Al probar el portal con una sesión real ya autenticada (creada por el cliente en Firebase Console) se detectó `Permission denied` incluso en operaciones que las Rules de `database.rules.json` sí permiten (un usuario autenticado escribiendo su propio perfil en `admins/{su-uid}`). Esto confirma que **las Rules nunca se publicaron en el proyecto real** `seam-middleware` — siguen siendo las restrictivas por defecto de una Realtime Database recién creada. El código del portal está correcto; falta este paso de configuración.
+Al probar el portal con una sesión real ya autenticada se detectó `Permission denied` incluso en operaciones que las Rules de `database.rules.json` sí permiten, confirmando que las Rules nunca se habían publicado en el proyecto real `seam-middleware` (seguían siendo las restrictivas por defecto de una Realtime Database recién creada). El cliente las publicó desde Firebase Console (Realtime Database → Reglas → pegar `database.rules.json` → Publicar).
 
-**Efecto mientras no se publiquen:** el perfil del admin no se guarda (se ve "Administrador" genérico en vez del nombre real), y los módulos Administradores/Auditoría no funcionan.
+**Bug real que esto causó y ya se corrigió:** mientras las Rules no estaban publicadas, activar/desactivar un serial podía mostrar "No fue posible consultar la información..." como si la operación hubiera fallado por completo, incluso en los casos en que el serial **sí se activaba/desactivaba correctamente** en la base del juego correspondiente — solo el registro de auditoría (que sí depende de estas Rules) era el que fallaba. `toggleSerial()` esperaba ambas escrituras con un solo `await` seguido, así que el error de auditoría hacía que toda la función lanzara una excepción y el portal reportara un fallo total sobre un cambio que ya se había aplicado. Riesgo real: un admin podía reintentar creyendo que no pasó nada y terminar alternando el estado sin darse cuenta. Corregido en `src/services/SerialService.ts`: la escritura del serial (principal) y el registro de auditoría (secundario) ahora son independientes — si solo la auditoría falla, el portal muestra éxito con una aclaración aparte en vez de un error genérico.
 
-**Solución (2 minutos, sin necesidad de la CLI de Firebase):**
-1. Ir a [Firebase Console](https://console.firebase.google.com/) → proyecto `seam-middleware` → **Realtime Database** → pestaña **Reglas**.
-2. Reemplazar el contenido por el de `database.rules.json` (raíz de este repositorio).
-3. Clic en **Publicar**.
-4. Recargar el portal e iniciar sesión de nuevo — el perfil se creará automáticamente en ese primer login posterior a la publicación.
+**Verificado en vivo de punta a punta**, con las Rules ya publicadas, usando la sesión real de administrador y confirmando cada paso contra la API REST de Firebase (no solo la UI):
+- `admins/{uid}`: el login creó el perfil real (`sebastiansegoviamedina@gmail.com`, rol admin, fechas reales) — la página Administradores ya muestra el nombre real en vez de "Administrador" genérico.
+- Auditoría: partía vacía ("No hay registros de auditoría todavía").
+- Se desactivó el serial `0253e25c2a7ad9e5fe265d6fc0274d45` de **Cartagena** desde el portal → confirmado por API REST que pasó de `1` a `0` en `seam-data-cartagena` → apareció de inmediato en Auditoría con admin, fecha, juego, serial y cambio `1 → 0` correctos.
+- Se reactivó el mismo serial desde el portal → confirmado por API REST que volvió a `1` (mismo estado que antes de la prueba) → segunda entrada en Auditoría con cambio `0 → 1`.
 
-**Bug real que causó esto y ya se corrigió:** activar/desactivar un serial mostraba "No fue posible consultar la información..." como si la operación hubiera fallado por completo, aunque el serial **sí se activaba/desactivaba correctamente** en la base del juego correspondiente — solo el registro de auditoría (que sí depende de estas Rules) era el que fallaba. `toggleSerial()` esperaba ambas escrituras con un solo `await` seguido, así que el error de auditoría hacía que toda la función lanzara una excepción y el portal reportara un fallo total sobre un cambio que ya se había aplicado. Riesgo real: un admin podía reintentar creyendo que no pasó nada y terminar alternando el estado sin darse cuenta.
-
-Corregido en `src/services/SerialService.ts`: la escritura del serial (operación principal) y el registro de auditoría (secundario) ahora son independientes. Si la escritura del serial falla, se reporta como error real (como antes). Si la escritura del serial tiene éxito pero la auditoría falla, el portal muestra éxito con una aclaración aparte ("...pero no se pudo registrar en la auditoría") en vez de un error genérico que hace parecer que nada se guardó. Verificado en vivo con la sesión real: se activó/desactivó un serial de Amazonas dos veces (para dejarlo exactamente en su estado original) y se confirmó que el cambio se aplicó correctamente en ambos casos pese al error de auditoría.
+Los tres módulos que dependían de la base central (Administradores, Auditoría, y el registro de auditoría de Seriales) funcionan correctamente.
 
 ## 11. Pase de UX/rendimiento y bug real encontrado
 
