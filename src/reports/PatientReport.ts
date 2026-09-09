@@ -10,6 +10,7 @@ import { formatExerciseLabel } from '@/utils/labels'
 import { estimateCafeteroStars } from '@/utils/estimatedStars'
 import { computeSessionStats } from '@/utils/patientStats'
 import { computeExercisePerformance, type PerformanceTrend } from '@/utils/exercisePerformance'
+import { computePatientConclusions, formatConclusionsText } from '@/utils/patientConclusions'
 import { drawHorizontalBarChart, drawLineChart, drawRatingCircles } from './pdfCharts'
 
 interface GenerateParams {
@@ -137,6 +138,29 @@ export function generatePatientReportPdf({ profile, filters, generatedByEmail }:
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   y = (doc as any).lastAutoTable.finalY + 24
+
+  // Conclusiones — síntesis estadística de los datos ya calculados, nunca una
+  // interpretación clínica (sección 21 del prompt original: prohibido diagnosticar).
+  const conclusions = computePatientConclusions(profile, filters)
+  const conclusionLines = formatConclusionsText(conclusions)
+  if (conclusionLines.length > 0) {
+    subheading('Conclusiones')
+    y += 10 // subheading() solo deja 4pt — suficiente antes de un autoTable (que añade su propio padding), no antes de texto plano como estas líneas
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(9.5)
+    doc.setTextColor(60, 60, 60)
+    for (const line of conclusionLines) {
+      ensureSpace(16)
+      doc.text(`•  ${line}`, marginX, y, { maxWidth: contentWidth })
+      y += 15
+    }
+    y += 2
+    ensureSpace(14)
+    doc.setFontSize(7.5)
+    doc.setTextColor(140, 140, 140)
+    doc.text('Síntesis estadística de las sesiones registradas — no constituye una evaluación clínica ni un diagnóstico.', marginX, y)
+    y += 22
+  }
 
   for (const r of profile.results) {
     if (r.state !== 'FOUND') continue

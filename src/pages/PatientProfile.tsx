@@ -9,6 +9,7 @@ import { ErrorState, TableSkeleton, EmptyState } from '@/components/States'
 import { FilterBar } from '@/components/FilterBar'
 import { SessionsTable } from '@/components/SessionsTable'
 import { PatientPerformanceSummary } from '@/components/PatientPerformanceSummary'
+import { PatientConclusions } from '@/components/PatientConclusions'
 import { EMPTY_FILTERS, applySessionFilters } from '@/utils/sessionFilters'
 import { generatePatientReportPdf } from '@/reports/PatientReport'
 import { useAuth } from '@/auth/AuthContext'
@@ -71,6 +72,8 @@ export function PatientProfile() {
       <FilterBar value={filters} onChange={setFilters} />
 
       <p className="text-sm text-ink-500">{totalFilteredSessions} sesiones coinciden con los filtros actuales.</p>
+
+      <PatientConclusions profile={data} filters={filters} />
 
       {data.results.map((r) => (
         <Card key={r.game}>

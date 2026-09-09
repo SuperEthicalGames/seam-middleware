@@ -1,4 +1,4 @@
-import type { NormalizedSession } from '@/types/game'
+import type { NormalizedDifficulty, NormalizedSession } from '@/types/game'
 
 export interface SessionStats {
   count: number
@@ -18,4 +18,11 @@ export function computeSessionStats(sessions: NormalizedSession[]): SessionStats
     bestScore: scores.length > 0 ? Math.max(...scores) : null,
     avgDurationSeconds: durations.length > 0 ? Math.round(durations.reduce((a, b) => a + b, 0) / durations.length) : null,
   }
+}
+
+/** Cuántas sesiones jugó en cada nivel de dificultad — mismo dato usado en el Dashboard, aquí a nivel de un solo paciente. */
+export function computeDifficultyDistribution(sessions: NormalizedSession[]): Record<NormalizedDifficulty, number> {
+  const distribution: Record<NormalizedDifficulty, number> = { easy: 0, medium: 0, hard: 0, unknown: 0 }
+  for (const s of sessions) distribution[s.difficulty] += 1
+  return distribution
 }
