@@ -30,14 +30,23 @@ npm run dev
 
 Abre `http://localhost:5173`. El login solo funciona con una cuenta creada en Firebase Console (ver "Primer acceso" abajo) — no hay registro público.
 
-## Primer acceso (crear el primer administrador)
+## Primer acceso (crear un administrador)
 
-No hay Cloud Functions ni Admin SDK en el frontend (ver `LIMITATIONS.md` — ambos implicarían costo o exponer credenciales privilegiadas). El alta de administradores es manual:
+No hay Cloud Functions ni Admin SDK en el frontend (ver `LIMITATIONS.md` — ambos implicarían costo o exponer credenciales privilegiadas). El alta de administradores es manual, en dos pasos: crear la cuenta de Firebase Auth y autorizar su UID. El segundo paso existe porque la API key de Firebase es pública por diseño (va en el bundle del portal) — sin una lista de UIDs permitidos, cualquiera podría llamar al endpoint de registro de Firebase Auth directamente (sin pasar por este portal) y terminar con un perfil de administrador autoprovisionado.
 
-1. Entra a [Firebase Console](https://console.firebase.google.com/) → proyecto `seam-middleware` → **Authentication** → **Users** → **Add user**.
-2. Crea el usuario con correo y contraseña.
-3. Inicia sesión con esa cuenta en el portal. En el primer login, la app crea automáticamente su perfil en `admins/{uid}` de la Realtime Database central.
-4. Repite el paso 1-3 para cada administrador adicional.
+**Primer administrador (Realtime Database central vacía):**
+
+1. [Firebase Console](https://console.firebase.google.com/) → proyecto `seam-middleware` → **Authentication** → **Users** → **Add user**. Crea el usuario con correo y contraseña y copia su **UID**.
+2. **Realtime Database** → pestaña de datos → crea manualmente `settings/allowedAdminUids/{uid}` con valor `true` (reemplaza `{uid}`).
+3. Inicia sesión con esa cuenta en el portal. En el primer login, la app crea automáticamente su perfil en `admins/{uid}`.
+
+**Administradores adicionales** (ya existe al menos uno):
+
+1. Repite el paso 1 de arriba.
+2. Cualquier administrador ya aprobado añade `settings/allowedAdminUids/{uid}: true` desde la Realtime Database — las Rules solo permiten esa escritura a quien ya tiene un perfil en `admins/`.
+3. La nueva cuenta inicia sesión normalmente; su perfil se crea solo.
+
+Sin el paso 2, las Rules rechazan la escritura del perfil y el portal muestra "Esta cuenta no está autorizada".
 
 ## Scripts
 

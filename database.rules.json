@@ -3,7 +3,7 @@
     "admins": {
       ".read": "auth != null",
       "$uid": {
-        ".write": "auth != null && auth.uid === $uid"
+        ".write": "auth != null && auth.uid === $uid && (data.exists() || root.child('settings/allowedAdminUids').child($uid).exists())"
       }
     },
     "audit": {
@@ -13,7 +13,10 @@
     },
     "settings": {
       ".read": "auth != null",
-      ".write": "auth != null"
+      ".write": "auth != null",
+      "allowedAdminUids": {
+        ".write": "auth != null && root.child('admins').child(auth.uid).exists()"
+      }
     },
     "$other": {
       ".read": false,
