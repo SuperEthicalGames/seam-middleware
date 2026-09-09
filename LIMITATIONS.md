@@ -109,3 +109,13 @@ El cliente entregó el logo oficial (corazón + wordmark "SEAM" + tagline "Cuida
 - **Transiciones**: entrada suave de página al navegar, modales con fade+scale, toasts con slide-in y botón de cierre manual, drawer móvil deslizante, skeletons con efecto shimmer en vez de solo parpadeo de opacidad, estados hover con leve elevación en tarjetas clicables (ej. tarjetas de Juegos).
 - **Scroll se reinicia** al cambiar de página (antes conservaba la posición de la página anterior).
 - Verificado en una sesión real autenticada (no solo con el bypass de prueba) navegando por Dashboard, Juegos, Perfil consolidado y Seriales.
+
+## 13. Analítica de rendimiento por ejercicio/minijuego ("capacidad fisioterapéutica")
+
+A pedido del cliente, el eje central del portal pasó a ser el rendimiento del paciente por minijuego específico, no solo métricas operativas. Se agregó (`src/utils/exercisePerformance.ts`, mostrado en Perfil consolidado vía `ExercisePerformanceTable`):
+
+- Por cada ejercicio/minijuego identificado en las sesiones filtradas: sesiones, puntaje promedio (crudo y como % de una referencia — ver `scoreReference.ts`, que ahora comparte la misma lógica de referencia por minijuego usada para las estrellas estimadas de Cafetero), mejor puntaje, duración promedio, y una **tendencia**.
+- **Metodología de la tendencia** (para que quede claro que no es una interpretación clínica, solo estadística descriptiva): compara el promedio de puntaje de la primera mitad cronológica de las sesiones de ESE ejercicio contra la segunda mitad. Con menos de 4 sesiones con puntaje se muestra "Insuficiente" en vez de forzar una tendencia sin evidencia suficiente. Un cambio menor al 5% se considera "Estable" para no sobre-interpretar ruido normal de un juego.
+- Nunca compara el rendimiento de un ejercicio contra otro ejercicio de forma cruda — el % normalizado sí es comparable entre ejercicios de un mismo paciente (esa es la utilidad: ver en qué minijuego específico rinde mejor o peor), pero el puntaje crudo mostrado al lado nunca se sustituye ni se recalibra entre minijuegos.
+- Se corrigió durante la verificación visual: dos variantes de nombre interno de Cartagena ("exercisedance" y "dance exercise") se traducen ambas a la etiqueta "Danza" — sin el valor crudo como subtítulo se verían como dos filas idénticas sin explicación; ahora se distinguen igual que en la tabla de sesiones.
+- Refactor: la referencia de puntaje por minijuego de Cafetero (antes solo en `estimatedStars.ts`) se movió a `scoreReference.ts`, compartida entre las estrellas estimadas y este análisis por ejercicio — mismos valores, sin duplicar la lógica.

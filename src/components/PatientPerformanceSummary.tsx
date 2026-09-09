@@ -3,6 +3,7 @@ import { computeSessionStats } from '@/utils/patientStats'
 import { formatDurationEs } from '@/utils/normalize'
 import { ScoreTrendChart } from '@/charts/ScoreTrendChart'
 import { GAME_COLORS } from '@/charts/palette'
+import { ExercisePerformanceTable } from './ExercisePerformanceTable'
 
 export function PatientPerformanceSummary({ sessions, game }: { sessions: NormalizedSession[]; game: GameId }) {
   const stats = computeSessionStats(sessions)
@@ -17,9 +18,17 @@ export function PatientPerformanceSummary({ sessions, game }: { sessions: Normal
         <MiniStat label="Mejor puntaje" value={stats.bestScore ?? 'No disponible'} />
         <MiniStat label="Duración promedio" value={formatDurationEs(stats.avgDurationSeconds)} />
       </div>
+
       <div className="rounded-lg border border-ink-100 p-4">
         <h4 className="mb-2 text-xs font-medium uppercase tracking-wide text-ink-400">Progreso de puntaje</h4>
         <ScoreTrendChart sessions={sessions} color={GAME_COLORS[game]} />
+      </div>
+
+      <div>
+        <h4 className="mb-2 text-xs font-medium uppercase tracking-wide text-ink-400">
+          Capacidad fisioterapéutica por ejercicio
+        </h4>
+        <ExercisePerformanceTable sessions={sessions} game={game} />
       </div>
     </div>
   )
