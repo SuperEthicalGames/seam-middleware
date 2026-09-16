@@ -66,6 +66,47 @@ describe('computeExercisePerformance', () => {
     expect(result[0].avgScore).toBe(Math.round((73 + 87 + 52) / 3))
   })
 
+  it('ordena los ejercicios de Cafetero según el flujo del proceso, no por cantidad de sesiones', () => {
+    const sessions = [
+      session({ game: 'game3', exercise: 'CoffeeWash', uid: 'u1' }),
+      session({ game: 'game3', exercise: 'CoffeeWash', uid: 'u1' }),
+      session({ game: 'game3', exercise: 'CoffeeElaboration', uid: 'u1' }),
+      session({ game: 'game3', exercise: 'CoffeeCollection', uid: 'u1' }),
+      session({ game: 'game3', exercise: 'CoffeeTransportation', uid: 'u1' }),
+      session({ game: 'game3', exercise: 'CoffeeClassification', uid: 'u1' }),
+    ]
+    const result = computeExercisePerformance(sessions, 'game3')
+    expect(result.map((r) => r.exercise)).toEqual([
+      'CoffeeCollection',
+      'CoffeeTransportation',
+      'CoffeeClassification',
+      'CoffeeWash',
+      'CoffeeElaboration',
+    ])
+  })
+
+  it('ordena los ejercicios de Amazonas según el orden pedido, no por cantidad de sesiones', () => {
+    const sessions = [
+      session({ exercise: 'exercise3' }),
+      session({ exercise: 'exercise3' }),
+      session({ exercise: 'exercise3' }),
+      session({ exercise: 'exercise1' }),
+      session({ exercise: 'exercise2' }),
+    ]
+    const result = computeExercisePerformance(sessions, 'game1')
+    expect(result.map((r) => r.exercise)).toEqual(['exercise1', 'exercise2', 'exercise3'])
+  })
+
+  it('juegos sin orden fijo (Cartagena) siguen ordenados por cantidad de sesiones', () => {
+    const sessions = [
+      session({ game: 'game2', exercise: 'exercisedance' }),
+      session({ game: 'game2', exercise: 'algunOtroCodigo' }),
+      session({ game: 'game2', exercise: 'algunOtroCodigo' }),
+    ]
+    const result = computeExercisePerformance(sessions, 'game2')
+    expect(result.map((r) => r.exercise)).toEqual(['algunOtroCodigo', 'exercisedance'])
+  })
+
   describe('tendencia', () => {
     it('es null con menos de 4 sesiones con puntaje (no hay suficiente evidencia)', () => {
       const sessions = [

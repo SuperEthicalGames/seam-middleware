@@ -1,3 +1,5 @@
+import type { GameId } from '@/types/game'
+
 /**
  * Traduce los códigos internos de ejercicio (tal como los escriben las 3 apps) a
  * etiquetas legibles para personal de SEAM. El valor original nunca se descarta —
@@ -37,4 +39,17 @@ const EXERCISE_ALIASES: Record<string, string> = {
 
 export function canonicalExercise(raw: string): string {
   return EXERCISE_ALIASES[raw] ?? raw
+}
+
+/**
+ * Orden fijo pedido por el cliente para las tablas de rendimiento por ejercicio de
+ * ciertos juegos — el flujo real del juego (Cafetero: recolectar → transportar →
+ * clasificar → lavar → elaborar) o el orden de los minijuegos (Amazonas), no la
+ * cantidad de sesiones ni el orden en que llegan los datos. Un juego que no aparece
+ * aquí (Cartagena, que solo tiene 1 minijuego) sigue ordenado por cantidad de sesiones
+ * — ver computeExercisePerformance, el único lugar que lo usa.
+ */
+export const FIXED_EXERCISE_ORDER: Partial<Record<GameId, string[]>> = {
+  game1: ['exercise1', 'exercise2', 'exercise3'],
+  game3: ['CoffeeCollection', 'CoffeeTransportation', 'CoffeeClassification', 'CoffeeWash', 'CoffeeElaboration'],
 }

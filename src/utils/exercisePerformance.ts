@@ -1,6 +1,6 @@
 import type { GameId, NormalizedDifficulty, NormalizedSession } from '@/types/game'
 import { scoreToPercent } from './scoreReference'
-import { canonicalExercise } from './labels'
+import { canonicalExercise, FIXED_EXERCISE_ORDER } from './labels'
 
 export type PerformanceTrend = 'mejorando' | 'estable' | 'disminuyendo'
 
@@ -84,5 +84,20 @@ export function computeExercisePerformance(sessions: NormalizedSession[], game: 
     })
   }
 
+  // Algunos juegos (Amazonas, Cafetero) tienen un orden fijo pedido por el cliente,
+  // no por cantidad de sesiones — ver FIXED_EXERCISE_ORDER. El resto (Cartagena, que
+  // solo tiene 1 minijuego) conserva el orden por cantidad de sesiones (más
+  // practicado primero).
+  const fixedOrder = FIXED_EXERCISE_ORDER[game]
+  if (fixedOrder) {
+    return results.sort((a, b) => {
+      const orderA = fixedOrder.indexOf(a.exercise)
+      const orderB = fixedOrder.indexOf(b.exercise)
+      if (orderA === -1 && orderB === -1) return b.count - a.count
+      if (orderA === -1) return 1
+      if (orderB === -1) return -1
+      return orderA - orderB
+    })
+  }
   return results.sort((a, b) => b.count - a.count)
 }
