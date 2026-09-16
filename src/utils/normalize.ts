@@ -50,11 +50,11 @@ export function normalizeDifficulty(raw: string | undefined | null): NormalizedD
 export function formatDifficultyLabel(difficulty: NormalizedDifficulty): string {
   switch (difficulty) {
     case 'easy':
-      return 'Fácil'
+      return 'Básico'
     case 'medium':
-      return 'Media'
+      return 'Medio'
     case 'hard':
-      return 'Difícil'
+      return 'Avanzado'
     default:
       return 'Desconocida'
   }

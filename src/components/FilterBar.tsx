@@ -33,9 +33,9 @@ export function FilterBar({ value, onChange }: { value: SessionFilters; onChange
           onChange={(e) => onChange({ ...value, difficulty: e.target.value as SessionFilters['difficulty'] })}
         >
           <option value="all">Todas</option>
-          <option value="easy">Fácil</option>
-          <option value="medium">Media</option>
-          <option value="hard">Difícil</option>
+          <option value="easy">Básico</option>
+          <option value="medium">Medio</option>
+          <option value="hard">Avanzado</option>
           <option value="unknown">Desconocida</option>
         </select>
       </div>
