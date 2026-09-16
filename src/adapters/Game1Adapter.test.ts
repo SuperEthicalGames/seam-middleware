@@ -10,7 +10,7 @@ vi.mock('firebase/database', () => ({
   ref: vi.fn((db: unknown, path?: string) => ({ db, path })),
   update: vi.fn(),
 }))
-vi.mock('@/firebase/game1', () => ({ game1Db: {} }))
+vi.mock('@/firebase/game1', () => ({ game1Db: {}, ensureGame1Auth: vi.fn().mockResolvedValue(undefined) }))
 
 const mockedGet = vi.mocked(get)
 const mockedUpdate = vi.mocked(update)

@@ -1,5 +1,5 @@
 import { get, ref, update } from 'firebase/database'
-import { game3Db } from '@/firebase/game3'
+import { ensureGame3Auth, game3Db } from '@/firebase/game3'
 import type { G3User } from '@/types/game'
 import type { NormalizedSerial, NormalizedSession, NormalizedUser } from '@/types/game'
 import type { GameAdapter, SerialToggleResult } from './types'
@@ -16,6 +16,7 @@ export class Game3Adapter implements GameAdapter {
   readonly gameId = 'game3' as const
 
   async getUsers(): Promise<NormalizedUser[]> {
+    await ensureGame3Auth()
     const snap = await get(ref(game3Db, 'users'))
     const val = (snap.val() ?? {}) as Record<string, G3User>
     return Object.entries(val)
@@ -31,12 +32,14 @@ export class Game3Adapter implements GameAdapter {
   }
 
   async getUserSessions(uid: string): Promise<NormalizedSession[]> {
+    await ensureGame3Auth()
     const snap = await get(ref(game3Db, `users/${uid}`))
     const raw = snap.val() as G3User | null
     return normalizeG3Sessions(uid, raw)
   }
 
   async getSerials(): Promise<NormalizedSerial[]> {
+    await ensureGame3Auth()
     const snap = await get(ref(game3Db, 'serials'))
     const val = (snap.val() ?? {}) as Record<string, 0 | 1>
     return Object.entries(val).map(([code, rawValue]) => ({
@@ -48,6 +51,7 @@ export class Game3Adapter implements GameAdapter {
   }
 
   async setSerialStatus(code: string, active: boolean): Promise<SerialToggleResult> {
+    await ensureGame3Auth()
     const serialRef = ref(game3Db, `serials/${code}`)
     const current = await get(serialRef)
     if (!current.exists()) {
