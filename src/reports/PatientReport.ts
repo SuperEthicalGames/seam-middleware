@@ -202,7 +202,7 @@ export function generatePatientReportPdf({ profile, filters, generatedByEmail }:
       autoTable(doc, {
         startY: y + 6,
         margin: { left: marginX, right: marginX },
-        head: [['Ejercicio', 'Sesiones', 'Puntaje prom.', 'Rendimiento', 'Mejor puntaje', 'Duración prom.', 'Tendencia']],
+        head: [['Ejercicio', 'Sesiones', 'Puntaje prom.', 'Rendimiento', 'Mejor puntaje', 'Duración prom.', 'Velocidad', 'Tendencia']],
         body: exerciseRows.map((ex) => [
           formatExerciseLabel(ex.exercise),
           String(ex.count),
@@ -210,6 +210,7 @@ export function generatePatientReportPdf({ profile, filters, generatedByEmail }:
           ex.avgScorePercent === null ? 'No disponible' : `${ex.avgScorePercent}%`,
           ex.bestScore === null ? 'No disponible' : String(ex.bestScore),
           formatDurationEs(ex.avgDurationSeconds),
+          ex.avgDurationPercent === null ? 'No disponible' : `${ex.avgDurationPercent}%`,
           ex.trend === null ? 'Insuficiente' : TREND_LABEL[ex.trend],
         ]),
         styles: { fontSize: 8.5, cellPadding: 5 },

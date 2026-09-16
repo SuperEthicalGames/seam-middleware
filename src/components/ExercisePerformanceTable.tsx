@@ -56,7 +56,20 @@ export function ExercisePerformanceTable({ sessions, game }: { sessions: Normali
                 )}
               </td>
               <td className="px-4 py-3 text-ink-700">{r.bestScore ?? 'No disponible'}</td>
-              <td className="px-4 py-3 text-ink-700">{formatDurationEs(r.avgDurationSeconds)}</td>
+              <td className="px-4 py-3">
+                <div className="text-ink-700">{formatDurationEs(r.avgDurationSeconds)}</div>
+                {r.avgDurationPercent !== null && (
+                  <div className="mt-1 flex items-center gap-1.5" title="Velocidad respecto al tiempo de referencia de este ejercicio/dificultad — más rápido es más alto.">
+                    <div className="h-1.5 w-14 overflow-hidden rounded-full bg-ink-100">
+                      <div
+                        className={`h-full rounded-full ${r.avgDurationPercent >= 66 ? 'bg-seam-600' : r.avgDurationPercent >= 33 ? 'bg-blue-500' : 'bg-red-500'}`}
+                        style={{ width: `${r.avgDurationPercent}%` }}
+                      />
+                    </div>
+                    <span className="text-xs text-ink-400">{r.avgDurationPercent}% vel.</span>
+                  </div>
+                )}
+              </td>
               <td className="px-4 py-3">
                 {r.trend === null ? (
                   <span className="text-xs text-ink-400" title="Se necesitan al menos 4 sesiones con puntaje para estimar una tendencia.">

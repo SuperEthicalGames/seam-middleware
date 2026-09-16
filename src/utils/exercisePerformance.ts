@@ -1,5 +1,6 @@
 import type { GameId, NormalizedDifficulty, NormalizedSession } from '@/types/game'
 import { scoreToPercent } from './scoreReference'
+import { durationToPercent } from './durationReference'
 import { canonicalExercise, FIXED_EXERCISE_ORDER } from './labels'
 
 export type PerformanceTrend = 'mejorando' | 'estable' | 'disminuyendo'
@@ -13,6 +14,9 @@ export interface ExercisePerformance {
   avgScorePercent: number | null
   bestScore: number | null
   avgDurationSeconds: number | null
+  /** Velocidad promedio como % del tiempo de referencia de cada sesión (ver
+   * durationReference.ts) — más rápido es más alto, independiente del puntaje. */
+  avgDurationPercent: number | null
   difficultyBreakdown: Record<NormalizedDifficulty, number>
   /** null si no hay suficientes sesiones con puntaje para estimar una tendencia (mínimo 4). */
   trend: PerformanceTrend | null
@@ -68,6 +72,9 @@ export function computeExercisePerformance(sessions: NormalizedSession[], game: 
     const scores = chronological.map((s) => s.score).filter((s): s is number => s !== null)
     const percentages = chronological.map((s) => scoreToPercent(game, exercise, s.score)).filter((p): p is number => p !== null)
     const durations = group.map((s) => s.durationSeconds).filter((d): d is number => d !== null)
+    const durationPercentages = group
+      .map((s) => durationToPercent(game, exercise, s.difficulty, s.durationSeconds))
+      .filter((p): p is number => p !== null)
 
     const difficultyBreakdown: Record<NormalizedDifficulty, number> = { easy: 0, medium: 0, hard: 0, unknown: 0 }
     for (const s of group) difficultyBreakdown[s.difficulty] += 1
@@ -79,6 +86,8 @@ export function computeExercisePerformance(sessions: NormalizedSession[], game: 
       avgScorePercent: percentages.length > 0 ? Math.round(percentages.reduce((a, b) => a + b, 0) / percentages.length) : null,
       bestScore: scores.length > 0 ? Math.max(...scores) : null,
       avgDurationSeconds: durations.length > 0 ? Math.round(durations.reduce((a, b) => a + b, 0) / durations.length) : null,
+      avgDurationPercent:
+        durationPercentages.length > 0 ? Math.round(durationPercentages.reduce((a, b) => a + b, 0) / durationPercentages.length) : null,
       difficultyBreakdown,
       trend: computeTrend(scores),
     })

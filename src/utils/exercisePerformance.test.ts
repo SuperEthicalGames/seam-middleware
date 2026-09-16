@@ -35,6 +35,22 @@ describe('computeExercisePerformance', () => {
     expect(ex1.avgScore).toBe(70)
   })
 
+  it('calcula avgDurationPercent usando la referencia de tiempo del minijuego/dificultad de cada sesión', () => {
+    const sessions = [
+      session({ game: 'game3', exercise: 'CoffeeCollection', difficulty: 'easy', durationSeconds: 0, uid: 'u3' }),
+      session({ game: 'game3', exercise: 'CoffeeCollection', difficulty: 'easy', durationSeconds: 120, uid: 'u3' }),
+    ]
+    const result = computeExercisePerformance(sessions, 'game3')
+    // (100% + 0%) / 2 = 50%
+    expect(result[0].avgDurationPercent).toBe(50)
+  })
+
+  it('avgDurationPercent es null cuando no hay referencia de tiempo conocida para el ejercicio', () => {
+    const sessions = [session({ game: 'game1', exercise: 'exercise-desconocido', durationSeconds: 60 })]
+    const result = computeExercisePerformance(sessions, 'game1')
+    expect(result[0].avgDurationPercent).toBeNull()
+  })
+
   it('calcula avgScorePercent usando la referencia propia de cada minijuego de Cafetero', () => {
     const sessions = [
       session({ game: 'game3', exercise: 'CoffeeElaboration', score: 1000, uid: 'u2' }),
