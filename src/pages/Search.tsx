@@ -7,6 +7,7 @@ import type { GameId } from '@/types/game'
 import { Card } from '@/components/Card'
 import { Badge } from '@/components/Badge'
 import { DataTable, type Column } from '@/components/DataTable'
+import { formatDateEs } from '@/utils/normalize'
 
 type GameFilter = GameId | 'all'
 type ActivityFilter = 'all' | 'active' | 'inactive'
@@ -19,13 +20,18 @@ export function Search() {
   const [query, setQuery] = useState(EMPTY_QUERY)
   const [gameFilter, setGameFilter] = useState<GameFilter>('all')
   const [activityFilter, setActivityFilter] = useState<ActivityFilter>('all')
+  const [dateFrom, setDateFrom] = useState('')
+  const [dateTo, setDateTo] = useState('')
 
-  const hasActiveFilters = query.trim() !== '' || gameFilter !== 'all' || activityFilter !== 'all'
+  const hasActiveFilters =
+    query.trim() !== '' || gameFilter !== 'all' || activityFilter !== 'all' || dateFrom !== '' || dateTo !== ''
 
   function clearFilters() {
     setQuery(EMPTY_QUERY)
     setGameFilter('all')
     setActivityFilter('all')
+    setDateFrom('')
+    setDateTo('')
   }
 
   const filtered = useMemo(() => {
@@ -36,9 +42,11 @@ export function Search() {
       if (gameFilter !== 'all' && !p.games.includes(gameFilter)) return false
       if (activityFilter === 'active' && !p.hasActivity) return false
       if (activityFilter === 'inactive' && p.hasActivity) return false
+      if (dateFrom && (!p.lastActivityDate || p.lastActivityDate < dateFrom)) return false
+      if (dateTo && (!p.lastActivityDate || p.lastActivityDate > dateTo)) return false
       return true
     })
-  }, [data, query, gameFilter, activityFilter])
+  }, [data, query, gameFilter, activityFilter, dateFrom, dateTo])
 
   function goToPatient(identifier: string) {
     // Igual que desde Juegos -> Usuarios: le dice a AppLayout/Sidebar de dónde viene
@@ -74,6 +82,12 @@ export function Search() {
       sortValue: (p) => (p.hasActivity ? 1 : 0),
     },
     {
+      key: 'lastActivityDate',
+      header: 'Última actividad',
+      render: (p) => formatDateEs(p.lastActivityDate),
+      sortValue: (p) => p.lastActivityDate ?? '',
+    },
+    {
       key: 'action',
       header: 'Acción',
       render: (p) => (
@@ -89,8 +103,9 @@ export function Search() {
       <Card>
         <h2 className="mb-1 text-sm font-semibold text-ink-800">Buscar paciente</h2>
         <p className="mb-4 text-sm text-ink-500">
-          Explora o filtra por cédula/CC (puede ser parcial), juego o actividad — no hace falta conocer el identificador completo. Cada fila
-          consulta los tres juegos de forma independiente al abrir el perfil.
+          Explora o filtra por cédula/CC (puede ser parcial), juego, actividad o fecha de última actividad — no hace falta conocer el
+          identificador completo. Hacé clic en "Última actividad" para ordenar del primero al último. Cada fila consulta los tres juegos de
+          forma independiente al abrir el perfil.
         </p>
         <div className="flex flex-wrap items-end gap-3">
           <div className="min-w-[200px] flex-1">
@@ -128,6 +143,32 @@ export function Search() {
               <option value="active">Con actividad</option>
               <option value="inactive">Sin actividad</option>
             </select>
+          </div>
+          <div>
+            <label className="label" htmlFor="patient-date-from">
+              Actividad desde
+            </label>
+            <input
+              id="patient-date-from"
+              type="date"
+              className="input"
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
+              max={dateTo || undefined}
+            />
+          </div>
+          <div>
+            <label className="label" htmlFor="patient-date-to">
+              Actividad hasta
+            </label>
+            <input
+              id="patient-date-to"
+              type="date"
+              className="input"
+              value={dateTo}
+              onChange={(e) => setDateTo(e.target.value)}
+              min={dateFrom || undefined}
+            />
           </div>
           <div className="flex gap-2">
             <button type="button" className="btn-secondary" onClick={clearFilters} disabled={!hasActiveFilters}>

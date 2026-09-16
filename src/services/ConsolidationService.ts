@@ -40,6 +40,14 @@ export interface PatientDirectoryRow {
   identifier: string
   games: GameId[]
   hasActivity: boolean
+  /** Fecha ISO de la sesión más reciente entre todos los juegos donde aparece — null si no hay ninguna. */
+  lastActivityDate: string | null
+}
+
+function latestIsoDate(a: string | null, b: string | null): string | null {
+  if (!a) return b
+  if (!b) return a
+  return a > b ? a : b
 }
 
 export interface PatientDirectory {
@@ -68,8 +76,14 @@ export async function listAllPatients(): Promise<PatientDirectory> {
           if (existing) {
             if (!existing.games.includes(gameId)) existing.games.push(gameId)
             existing.hasActivity = existing.hasActivity || u.hasActivity
+            existing.lastActivityDate = latestIsoDate(existing.lastActivityDate, u.lastActivityDate)
           } else {
-            byIdentifier.set(u.identifier, { identifier: u.identifier, games: [gameId], hasActivity: u.hasActivity })
+            byIdentifier.set(u.identifier, {
+              identifier: u.identifier,
+              games: [gameId],
+              hasActivity: u.hasActivity,
+              lastActivityDate: u.lastActivityDate,
+            })
           }
         }
       } catch {

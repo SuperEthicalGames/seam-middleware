@@ -76,6 +76,7 @@ export interface NormalizedUser {
   uid: string
   identifier: string // cedula | CC, tal cual (sin limpiar)
   hasActivity: boolean
+  lastActivityDate: string | null // ISO 'YYYY-MM-DD' de la sesión más reciente, null si no hay ninguna
 }
 
 export interface NormalizedSession {

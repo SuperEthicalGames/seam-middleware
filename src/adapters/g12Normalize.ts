@@ -34,7 +34,19 @@ export function normalizeG12User(game: GameId, uid: string, raw: G12User | null)
     uid,
     identifier: raw.cedula,
     hasActivity: Boolean(raw.record || raw.results),
+    lastActivityDate: latestRecordDate(raw.record),
   }
+}
+
+/** Fecha ISO más reciente entre las entradas de `record` — null si no hay ninguna parseable. */
+function latestRecordDate(record: Record<string, G12RecordEntry> | undefined): string | null {
+  if (!record) return null
+  let latest: string | null = null
+  for (const entry of Object.values(record)) {
+    const parsed = parseDdMmYyyy(entry.date)
+    if (parsed && (!latest || parsed > latest)) latest = parsed
+  }
+  return latest
 }
 
 /**

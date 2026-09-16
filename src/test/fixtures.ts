@@ -26,6 +26,7 @@ export function makeUser(overrides: Partial<NormalizedUser> = {}): NormalizedUse
     uid: 'uid1',
     identifier: '900000001',
     hasActivity: true,
+    lastActivityDate: null,
     ...overrides,
   }
 }

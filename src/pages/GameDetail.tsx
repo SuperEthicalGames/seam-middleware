@@ -1,3 +1,4 @@
+import { useMemo, useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useAsync } from '@/hooks/useAsync'
 import { adapterRegistry } from '@/adapters'
@@ -10,6 +11,7 @@ import { ErrorState, TableSkeleton } from '@/components/States'
 import { DataTable, type Column } from '@/components/DataTable'
 import { SerialsTable } from '@/components/SerialsTable'
 import type { NormalizedUser } from '@/types/game'
+import { formatDateEs } from '@/utils/normalize'
 
 type Tab = 'resumen' | 'usuarios' | 'seriales'
 
@@ -32,6 +34,19 @@ export function GameDetail() {
   const usersState = useAsync(() => adapterRegistry[game].getUsers(), [game])
   const serialsState = useAsync(() => adapterRegistry[game].getSerials(), [game])
 
+  const [userDateFrom, setUserDateFrom] = useState('')
+  const [userDateTo, setUserDateTo] = useState('')
+
+  const filteredUsers = useMemo(() => {
+    const users = usersState.data ?? []
+    if (!userDateFrom && !userDateTo) return users
+    return users.filter((u) => {
+      if (userDateFrom && (!u.lastActivityDate || u.lastActivityDate < userDateFrom)) return false
+      if (userDateTo && (!u.lastActivityDate || u.lastActivityDate > userDateTo)) return false
+      return true
+    })
+  }, [usersState.data, userDateFrom, userDateTo])
+
   if (!isValidGame) {
     return <ErrorState message="El juego solicitado no existe." />
   }
@@ -43,6 +58,12 @@ export function GameDetail() {
       header: 'Actividad',
       render: (u) => <Badge tone={u.hasActivity ? 'success' : 'neutral'}>{u.hasActivity ? 'Con actividad' : 'Sin actividad'}</Badge>,
       sortValue: (u) => (u.hasActivity ? 1 : 0),
+    },
+    {
+      key: 'lastActivityDate',
+      header: 'Última actividad',
+      render: (u) => formatDateEs(u.lastActivityDate),
+      sortValue: (u) => u.lastActivityDate ?? '',
     },
     {
       key: 'action',
@@ -102,9 +123,48 @@ export function GameDetail() {
 
       {tab === 'usuarios' && (
         <Card>
+          <div className="mb-4 flex flex-wrap items-end gap-3">
+            <div>
+              <label className="label" htmlFor="user-date-from">
+                Actividad desde
+              </label>
+              <input
+                id="user-date-from"
+                type="date"
+                className="input"
+                value={userDateFrom}
+                onChange={(e) => setUserDateFrom(e.target.value)}
+                max={userDateTo || undefined}
+              />
+            </div>
+            <div>
+              <label className="label" htmlFor="user-date-to">
+                Actividad hasta
+              </label>
+              <input
+                id="user-date-to"
+                type="date"
+                className="input"
+                value={userDateTo}
+                onChange={(e) => setUserDateTo(e.target.value)}
+                min={userDateFrom || undefined}
+              />
+            </div>
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={() => {
+                setUserDateFrom('')
+                setUserDateTo('')
+              }}
+              disabled={!userDateFrom && !userDateTo}
+            >
+              Limpiar filtros
+            </button>
+          </div>
           <DataTable
             columns={userColumns}
-            rows={usersState.data ?? []}
+            rows={filteredUsers}
             rowKey={(u) => u.uid}
             loading={usersState.loading}
             error={usersState.error}

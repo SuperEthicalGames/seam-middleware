@@ -15,7 +15,19 @@ export function normalizeG3User(uid: string, raw: G3User | null): NormalizedUser
     uid,
     identifier,
     hasActivity: Boolean(raw.results),
+    lastActivityDate: latestResultDate(raw.results),
   }
+}
+
+/** Fecha ISO más reciente entre las entradas de `results` — null si no hay ninguna parseable. */
+function latestResultDate(results: Record<string, G3ResultEntry> | undefined): string | null {
+  if (!results) return null
+  let latest: string | null = null
+  for (const entry of Object.values(results)) {
+    const parsed = parseDdMmYyyy(entry.date)
+    if (parsed && (!latest || parsed > latest)) latest = parsed
+  }
+  return latest
 }
 
 export function entryToG3Session(uid: string, key: string, entry: G3ResultEntry): NormalizedSession {
