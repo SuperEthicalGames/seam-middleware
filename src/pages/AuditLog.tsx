@@ -5,13 +5,15 @@ import type { GameId } from '@/types/game'
 import { Card } from '@/components/Card'
 import { Badge } from '@/components/Badge'
 import { DataTable, type Column } from '@/components/DataTable'
-import type { AuditAction, AuditEntry } from '@/types/central'
+import { formatRoleLabel } from '@/utils/roles'
+import type { AdminRole, AuditAction, AuditEntry } from '@/types/central'
 
 const ACTION_META: Record<AuditAction, { label: string; tone: 'success' | 'danger' | 'neutral' }> = {
   serial_activate: { label: 'Activación de serial', tone: 'success' },
   serial_deactivate: { label: 'Desactivación de serial', tone: 'danger' },
   admin_created: { label: 'Administrador creado', tone: 'success' },
   admin_revoked: { label: 'Acceso revocado', tone: 'danger' },
+  admin_role_changed: { label: 'Rol modificado', tone: 'neutral' },
 }
 
 export function AuditLog() {
@@ -49,7 +51,13 @@ export function AuditLog() {
     {
       key: 'change',
       header: 'Cambio',
-      render: (e) => (e.previousValue !== undefined && e.newValue !== undefined ? `${e.previousValue} → ${e.newValue}` : '—'),
+      render: (e) => {
+        if (e.previousValue === undefined || e.newValue === undefined) return '—'
+        if (e.action === 'admin_role_changed') {
+          return `${formatRoleLabel(e.previousValue as AdminRole)} → ${formatRoleLabel(e.newValue as AdminRole)}`
+        }
+        return `${e.previousValue} → ${e.newValue}`
+      },
     },
   ]
 

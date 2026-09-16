@@ -2,8 +2,9 @@ import { get, ref, remove, set, update } from 'firebase/database'
 import type { User } from 'firebase/auth'
 import { centralDb } from '@/firebase/central'
 import { createAdminAuthAccount } from '@/firebase/adminCreation'
+import { generateTemporaryPassword } from '@/utils/tempPassword'
 import { tryRecordAuditEntry, type AuditResult } from './AuditService'
-import type { AdminProfile } from '@/types/central'
+import type { AdminProfile, AdminRole } from '@/types/central'
 
 /**
  * Ver LIMITATIONS.md — no hay Cloud Functions ni Admin SDK en el frontend, así que
@@ -45,23 +46,29 @@ export interface CreateNewAdminParams {
 
 export interface CreateNewAdminResult extends AuditResult {
   profile: AdminProfile
+  /** Se devuelve una sola vez para que quien crea la cuenta la comparta por un canal seguro. */
+  temporaryPassword: string
 }
 
 /**
  * Crea la cuenta de Firebase Auth (vía una App secundaria — ver adminCreation.ts,
- * nunca toca la sesión de quien está creando) y escribe su perfil de inmediato con
- * role:'admin' fijo, para que aparezca en la lista sin esperar su primer login. Las
+ * nunca toca la sesión de quien está creando) con una contraseña temporal generada
+ * aquí mismo, y escribe su perfil de inmediato con role:'admin' fijo y
+ * mustChangePassword:true, para que aparezca en la lista sin esperar su primer login
+ * y quede forzada a definir su propia contraseña al entrar (ver ProtectedRoute). Las
  * Rules exigen que quien llama ya sea 'owner' para poder escribir el nodo de otra
  * persona — ver database.rules.json.
  */
 export async function createNewAdmin(params: CreateNewAdminParams): Promise<CreateNewAdminResult> {
-  const { uid } = await createAdminAuthAccount(params.email)
+  const temporaryPassword = generateTemporaryPassword()
+  const { uid } = await createAdminAuthAccount(params.email, temporaryPassword)
   const profile: AdminProfile = {
     uid,
     email: params.email,
     displayName: params.displayName?.trim() || params.email.split('@')[0],
     role: 'admin',
     createdAt: Date.now(),
+    mustChangePassword: true,
   }
   await set(ref(centralDb, `admins/${uid}`), profile)
   const auditResult = await tryRecordAuditEntry({
@@ -70,7 +77,39 @@ export async function createNewAdmin(params: CreateNewAdminParams): Promise<Crea
     action: 'admin_created',
     targetEmail: params.email,
   })
-  return { ...auditResult, profile }
+  return { ...auditResult, profile, temporaryPassword }
+}
+
+/** Se llama tras un cambio de contraseña exitoso tal como quedó escrito — nunca cambia `role`, así que lo permiten las Rules de autoescritura. */
+export async function clearMustChangePassword(uid: string): Promise<void> {
+  await update(ref(centralDb, `admins/${uid}`), { mustChangePassword: false })
+}
+
+export interface ChangeAdminRoleParams {
+  targetUid: string
+  targetEmail: string
+  previousRole: AdminRole
+  newRole: AdminRole
+  changedByUid: string
+  changedByEmail: string
+}
+
+/**
+ * Promueve o degrada el rol de otra cuenta. Igual que crear/revocar, las Rules solo lo
+ * permiten a quien ya es 'owner' (ver database.rules.json) — no hace falta tocarlas para
+ * esto. Las Rules tampoco impiden dejar el portal sin ningún 'owner'; esa protección (no
+ * degradar al último owner, no cambiarse el rol a uno mismo) vive en la UI, en Admins.tsx.
+ */
+export async function changeAdminRole(params: ChangeAdminRoleParams): Promise<AuditResult> {
+  await update(ref(centralDb, `admins/${params.targetUid}`), { role: params.newRole })
+  return tryRecordAuditEntry({
+    adminUid: params.changedByUid,
+    adminEmail: params.changedByEmail,
+    action: 'admin_role_changed',
+    targetEmail: params.targetEmail,
+    previousValue: params.previousRole,
+    newValue: params.newRole,
+  })
 }
 
 export interface RevokeAdminParams {

@@ -8,7 +8,7 @@ import {
   type User,
 } from 'firebase/auth'
 import { centralAuth } from '@/firebase/central'
-import { ensureAdminProfile } from '@/services/AdminService'
+import { clearMustChangePassword, ensureAdminProfile } from '@/services/AdminService'
 import type { AdminProfile } from '@/types/central'
 import { toFriendlyMessage } from '@/utils/errors'
 
@@ -75,6 +75,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           await updatePassword(centralAuth.currentUser, newPassword)
         } catch (error) {
           throw new Error(toFriendlyMessage(error))
+        }
+        if (profile?.mustChangePassword) {
+          // La contraseña de Auth ya cambió (lo que importa para la seguridad de la cuenta);
+          // si esta escritura falla no se revierte lo anterior, solo se le volverá a pedir
+          // el cambio en el próximo login.
+          setProfile({ ...profile, mustChangePassword: false })
+          await clearMustChangePassword(profile.uid).catch(() => {})
         }
       },
     }),

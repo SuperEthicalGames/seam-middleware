@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { get, remove, set, update } from 'firebase/database'
-import { ensureAdminProfile, getAllAdmins, createNewAdmin, revokeAdmin } from './AdminService'
+import { ensureAdminProfile, getAllAdmins, createNewAdmin, revokeAdmin, clearMustChangePassword, changeAdminRole } from './AdminService'
 import { createAdminAuthAccount } from '@/firebase/adminCreation'
 import { tryRecordAuditEntry } from './AuditService'
 import { makeSnapshot } from '@/test/firebaseTestUtils'
@@ -86,17 +86,23 @@ describe('createNewAdmin', () => {
 
   const params = { email: 'empleado@seam.test', createdByUid: 'owner1', createdByEmail: 'owner@seam.test' }
 
-  it('crea la cuenta de Auth, escribe el perfil con role:admin (nunca owner) y audita', async () => {
+  it('crea la cuenta de Auth con una contraseña temporal, escribe el perfil con role:admin (nunca owner) y mustChangePassword:true, y audita', async () => {
     mockedCreateAuthAccount.mockResolvedValueOnce({ uid: 'newUid' })
     mockedSet.mockResolvedValueOnce(undefined)
     mockedTryRecordAudit.mockResolvedValueOnce({ auditLogged: true })
 
     const result = await createNewAdmin(params)
 
-    expect(mockedCreateAuthAccount).toHaveBeenCalledWith('empleado@seam.test')
-    expect(mockedSet).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ uid: 'newUid', email: 'empleado@seam.test', role: 'admin' }))
+    expect(mockedCreateAuthAccount).toHaveBeenCalledWith('empleado@seam.test', expect.any(String))
+    const [, temporaryPasswordArg] = mockedCreateAuthAccount.mock.calls[0]
+    expect(temporaryPasswordArg.length).toBeGreaterThanOrEqual(8)
+    expect(mockedSet).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ uid: 'newUid', email: 'empleado@seam.test', role: 'admin', mustChangePassword: true }),
+    )
     expect(mockedTryRecordAudit).toHaveBeenCalledWith(expect.objectContaining({ action: 'admin_created', targetEmail: 'empleado@seam.test' }))
     expect(result.profile.role).toBe('admin')
+    expect(result.temporaryPassword).toBe(temporaryPasswordArg)
     expect(result.auditLogged).toBe(true)
   })
 
@@ -115,6 +121,46 @@ describe('createNewAdmin', () => {
 
     await expect(createNewAdmin(params)).rejects.toBeTruthy()
     expect(mockedSet).not.toHaveBeenCalled()
+  })
+})
+
+describe('clearMustChangePassword', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('actualiza solo mustChangePassword:false en el nodo del propio uid', async () => {
+    mockedUpdate.mockResolvedValueOnce(undefined)
+
+    await clearMustChangePassword('uid1')
+
+    expect(mockedUpdate).toHaveBeenCalledWith(expect.objectContaining({ path: 'admins/uid1' }), { mustChangePassword: false })
+  })
+})
+
+describe('changeAdminRole', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('escribe el nuevo rol en el nodo del destino y audita admin_role_changed con el antes/después', async () => {
+    mockedUpdate.mockResolvedValueOnce(undefined)
+    mockedTryRecordAudit.mockResolvedValueOnce({ auditLogged: true })
+
+    const result = await changeAdminRole({
+      targetUid: 'targetUid',
+      targetEmail: 'empleado@seam.test',
+      previousRole: 'admin',
+      newRole: 'owner',
+      changedByUid: 'owner1',
+      changedByEmail: 'owner@seam.test',
+    })
+
+    expect(mockedUpdate).toHaveBeenCalledWith(expect.objectContaining({ path: 'admins/targetUid' }), { role: 'owner' })
+    expect(mockedTryRecordAudit).toHaveBeenCalledWith(
+      expect.objectContaining({ action: 'admin_role_changed', targetEmail: 'empleado@seam.test', previousValue: 'admin', newValue: 'owner' }),
+    )
+    expect(result.auditLogged).toBe(true)
   })
 })
 

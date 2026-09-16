@@ -1,5 +1,5 @@
 import { initializeApp, deleteApp } from 'firebase/app'
-import { getAuth, createUserWithEmailAndPassword, sendPasswordResetEmail, signOut } from 'firebase/auth'
+import { getAuth, createUserWithEmailAndPassword, signOut } from 'firebase/auth'
 import { firebaseConfig } from './central'
 
 /**
@@ -10,15 +10,11 @@ import { firebaseConfig } from './central'
  * `firebaseConfig`, pero un `Auth` propio) solo para este momento, y se destruye al
  * terminar — la sesión real del admin principal en `centralAuth` nunca se toca.
  */
-export async function createAdminAuthAccount(email: string): Promise<{ uid: string }> {
+export async function createAdminAuthAccount(email: string, temporaryPassword: string): Promise<{ uid: string }> {
   const secondaryApp = initializeApp(firebaseConfig, `admin-creation-${Date.now()}`)
   const secondaryAuth = getAuth(secondaryApp)
   try {
-    // Contraseña descartada de inmediato — la cuenta nueva la define ella misma vía el
-    // correo de restablecimiento enviado abajo. Nadie más llega a conocerla.
-    const tempPassword = crypto.randomUUID()
-    const credential = await createUserWithEmailAndPassword(secondaryAuth, email, tempPassword)
-    await sendPasswordResetEmail(secondaryAuth, email)
+    const credential = await createUserWithEmailAndPassword(secondaryAuth, email, temporaryPassword)
     await signOut(secondaryAuth)
     return { uid: credential.user.uid }
   } finally {

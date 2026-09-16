@@ -1,6 +1,6 @@
 import { push, ref, serverTimestamp, get, query, orderByChild, limitToLast } from 'firebase/database'
 import { centralDb } from '@/firebase/central'
-import type { AuditAction, AuditEntry } from '@/types/central'
+import type { AdminRole, AuditAction, AuditEntry } from '@/types/central'
 import type { GameId } from '@/types/game'
 import { toFriendlyMessage } from '@/utils/errors'
 
@@ -11,8 +11,8 @@ interface RecordAuditParams {
   // Solo acciones sobre seriales:
   game?: GameId
   serial?: string
-  previousValue?: 0 | 1
-  newValue?: 0 | 1
+  previousValue?: 0 | 1 | AdminRole
+  newValue?: 0 | 1 | AdminRole
   // Solo acciones sobre cuentas de administrador:
   targetEmail?: string
 }

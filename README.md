@@ -41,9 +41,9 @@ No hay Cloud Functions ni Admin SDK en el frontend (ver `LIMITATIONS.md` — amb
 
 ## Administradores adicionales (empleados)
 
-Con al menos un `owner` ya creado, el resto se maneja **desde el propio portal**, sin volver a tocar Firebase Console: página **Administradores** → **Crear administrador** → correo (y nombre opcional). El portal crea la cuenta de Firebase Auth (vía una instancia secundaria de Firebase, sin cerrar la sesión de quien la crea — ver `src/firebase/adminCreation.ts`), le escribe su perfil de inmediato con `role: "admin"`, y le envía un correo de restablecimiento de contraseña — nadie más llega a conocer su contraseña. Revocar el acceso es igual de directo: botón **Revocar acceso** en su fila (nunca disponible sobre la propia cuenta, para evitar un autobloqueo).
+Con al menos un `owner` ya creado, el resto se maneja **desde el propio portal**, sin volver a tocar Firebase Console: página **Administradores** → **Crear administrador** → correo (y nombre opcional). El portal crea la cuenta de Firebase Auth (vía una instancia secundaria de Firebase, sin cerrar la sesión de quien la crea — ver `src/firebase/adminCreation.ts`) con una **contraseña temporal generada en el momento** (`src/utils/tempPassword.ts`), que se muestra una sola vez a quien crea la cuenta para que la comparta por un canal seguro; el perfil nuevo queda con `role: "admin"` y `mustChangePassword: true`, así que en su primer login `ProtectedRoute` la obliga a definir su propia contraseña antes de ver el resto del portal. Revocar el acceso es igual de directo: botón **Revocar acceso** en su fila (nunca disponible sobre la propia cuenta, para evitar un autobloqueo).
 
-Solo un `owner` ve estos controles; el resto de administradores tiene la página en modo solo lectura, igual que antes.
+Solo un `owner` ve estos controles; el resto de administradores tiene la página en modo solo lectura, igual que antes. Un `owner` también puede cambiarle el rol a cualquier otra cuenta (botón **Quitar rol de dueño** / **Hacer dueño principal** en su fila) — nunca sobre la propia cuenta, y el botón se bloquea si esa sería la única cuenta `owner` restante.
 
 ## Scripts
 
