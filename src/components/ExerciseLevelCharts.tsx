@@ -67,7 +67,8 @@ export function ExerciseLevelCharts({ sessions, game }: { sessions: NormalizedSe
             </div>
             {ex.unknownLevelCount > 0 && (
               <p className="mt-2 text-xs text-ink-400">
-                {plural(ex.unknownLevelCount, 'sesión', 'sesiones')} de este minijuego sin nivel de dificultad registrado no se grafican.
+                {plural(ex.unknownLevelCount, 'sesión', 'sesiones')} de este minijuego sin nivel de dificultad registrado no se{' '}
+                {ex.unknownLevelCount === 1 ? 'grafica' : 'grafican'}.
               </p>
             )}
           </div>
