@@ -7,7 +7,7 @@ interface NavItem {
   icon: (props: { className?: string }) => JSX.Element
   /** Rutas que conceptualmente pertenecen a esta sección aunque no cuelguen de `to` en
    * la URL — ej. el perfil consolidado de un paciente (/paciente/:id) se llega desde
-   * "Buscar paciente" pero vive en su propio path, sin esto quedaba sin ítem activo. */
+   * "Buscar usuario" pero vive en su propio path, sin esto quedaba sin ítem activo. */
   matchAlso?: string[]
 }
 
@@ -64,7 +64,7 @@ function IconShield({ className }: { className?: string }) {
 
 const NAV_ITEMS: NavItem[] = [
   { to: '/', label: 'Dashboard', icon: IconDashboard },
-  { to: '/buscar', label: 'Buscar paciente', icon: IconSearch, matchAlso: ['/paciente'] },
+  { to: '/buscar', label: 'Buscar usuario', icon: IconSearch, matchAlso: ['/paciente'] },
   { to: '/juegos', label: 'Juegos', icon: IconGames },
   { to: '/seriales', label: 'Seriales', icon: IconKey },
   { to: '/administradores', label: 'Administradores', icon: IconUsers },
@@ -81,7 +81,7 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   const location = useLocation()
   // El perfil consolidado (/paciente/:id) se llega desde más de una sección —
   // resalta la sección real de origen (pasada por location.state, ver Search.tsx /
-  // GameDetail.tsx) en vez de asumir siempre "Buscar paciente".
+  // GameDetail.tsx) en vez de asumir siempre "Buscar usuario".
   const fromTo = (location.state as { from?: { to: string } } | null)?.from?.to
   const highlightPath = location.pathname.startsWith('/paciente/') && fromTo ? fromTo : location.pathname
 

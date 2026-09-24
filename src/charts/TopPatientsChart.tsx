@@ -58,7 +58,7 @@ export function TopPatientsChart({ patients }: { patients: TopPatient[] }) {
       </div>
 
       {chartData.length === 0 ? (
-        <EmptyState title="No hay pacientes con sesiones registradas todavía." />
+        <EmptyState title="No hay usuarios con sesiones registradas todavía." />
       ) : (
         <div style={{ height: Math.max(200, chartData.length * 34) }} className="w-full">
           <ResponsiveContainer width="100%" height="100%">

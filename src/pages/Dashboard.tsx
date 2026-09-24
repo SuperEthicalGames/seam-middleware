@@ -57,7 +57,7 @@ export function Dashboard() {
       )}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="Pacientes registrados (3 juegos)" value={totalUsers} hint="Suma de usuarios por juego, sin deduplicar por cédula" />
+        <StatCard label="Usuarios registrados (3 juegos)" value={totalUsers} hint="Suma de usuarios por juego, sin deduplicar por cédula" />
         <StatCard label="Sesiones registradas" value={totalSessions} hint="Partidas jugadas en total, las 3 bases" />
         <StatCard
           label="Usuarios con actividad"
@@ -68,10 +68,10 @@ export function Dashboard() {
       </div>
 
       <div>
-        <h2 className="mb-3 text-base font-semibold text-ink-900">Rendimiento de pacientes</h2>
+        <h2 className="mb-3 text-base font-semibold text-ink-900">Rendimiento de usuarios</h2>
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           <Card>
-            <h3 className="mb-1 text-sm font-semibold text-ink-800">Pacientes más activos</h3>
+            <h3 className="mb-1 text-sm font-semibold text-ink-800">Usuarios más activos</h3>
             <p className="mb-4 text-xs text-ink-400">Top por número de sesiones jugadas, independiente por juego.</p>
             <TopPatientsChart patients={data.topPatients} />
           </Card>
@@ -89,13 +89,13 @@ export function Dashboard() {
       <div>
         <h2 className="mb-1 text-base font-semibold text-ink-900">Capacidad fisioterapéutica</h2>
         <p className="mb-3 text-xs text-ink-400">
-          Rendimiento normalizado (% de una partida de referencia) agregando las sesiones de todos los pacientes — síntesis estadística, no una
+          Rendimiento normalizado (% de una partida de referencia) agregando las sesiones de todos los usuarios — síntesis estadística, no una
           evaluación clínica.
         </p>
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           <Card>
             <h3 className="mb-1 text-sm font-semibold text-ink-800">Rendimiento promedio por ejercicio</h3>
-            <p className="mb-4 text-xs text-ink-400">Todos los pacientes de cada juego — los ejercicios más difíciles para la población aparecen arriba.</p>
+            <p className="mb-4 text-xs text-ink-400">Todos los usuarios de cada juego — los ejercicios más difíciles para la población aparecen arriba.</p>
             <ExercisePerformanceOverviewChart data={data.exercisePerformance} />
           </Card>
           <Card>

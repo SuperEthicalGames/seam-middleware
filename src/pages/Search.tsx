@@ -51,7 +51,7 @@ export function Search() {
   function goToPatient(identifier: string) {
     // Igual que desde Juegos -> Usuarios: le dice a AppLayout/Sidebar de dónde viene
     // esta navegación, para que "volver" apunte aquí y no a un destino fijo.
-    navigate(`/paciente/${encodeURIComponent(identifier)}`, { state: { from: { label: 'Buscar paciente', to: '/buscar' } } })
+    navigate(`/paciente/${encodeURIComponent(identifier)}`, { state: { from: { label: 'Buscar usuario', to: '/buscar' } } })
   }
 
   const columns: Column<PatientDirectoryRow>[] = [
@@ -101,7 +101,7 @@ export function Search() {
   return (
     <div className="space-y-6">
       <Card>
-        <h2 className="mb-1 text-sm font-semibold text-ink-800">Buscar paciente</h2>
+        <h2 className="mb-1 text-sm font-semibold text-ink-800">Buscar usuario</h2>
         <p className="mb-4 text-sm text-ink-500">
           Explora o filtra por cédula/CC (puede ser parcial), juego, actividad o fecha de última actividad — no hace falta conocer el
           identificador completo. Hacé clic en "Última actividad" para ordenar del primero al último. Cada fila consulta los tres juegos de
@@ -187,7 +187,7 @@ export function Search() {
 
       <Card>
         <p className="mb-4 text-sm text-ink-500">
-          {loading ? 'Cargando pacientes...' : `${filtered.length} de ${data?.patients.length ?? 0} pacientes coinciden con los filtros.`}
+          {loading ? 'Cargando usuarios...' : `${filtered.length} de ${data?.patients.length ?? 0} usuarios coinciden con los filtros.`}
         </p>
         <DataTable
           columns={columns}
@@ -196,7 +196,7 @@ export function Search() {
           loading={loading}
           error={error}
           onRetry={reload}
-          emptyTitle="Ningún paciente coincide con los filtros actuales."
+          emptyTitle="Ningún usuario coincide con los filtros actuales."
           pageSize={15}
         />
       </Card>

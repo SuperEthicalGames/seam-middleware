@@ -89,7 +89,7 @@ export function PatientProfile() {
             {r.state === 'ERROR' && <Badge tone="danger">Error</Badge>}
           </div>
 
-          {r.state === 'NOT_FOUND' && <EmptyState title="No se encontró este paciente en este juego." />}
+          {r.state === 'NOT_FOUND' && <EmptyState title="No se encontró este usuario en este juego." />}
           {r.state === 'ERROR' && <ErrorState message={r.errorMessage ?? `No fue posible consultar ${GAME_CATALOG[r.game].displayName}.`} onRetry={reload} />}
           {r.state === 'FOUND' && (
             <>
