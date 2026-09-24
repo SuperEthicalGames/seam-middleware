@@ -65,49 +65,84 @@ export function drawHorizontalBarChart(
   return cursorY
 }
 
-/** Línea de progreso simple (equivalente al ScoreTrendChart de la UI). */
-export function drawLineChart(doc: jsPDF, opts: { x: number; y: number; width: number; height: number; values: number[]; color: [number, number, number] }): number {
-  const { x, y, width, height, values, color } = opts
-  const bottom = y + height
+/** Espacio que `drawLevelChart` deja entre su título y el área de trazado. */
+const LEVEL_CHART_TITLE_HEIGHT = 8
 
+/**
+ * Mini gráfica de líneas de UN nivel de dificultad de UN minijuego (equivalente a
+ * LevelProgressChart de la UI): un punto por sesión, de la más antigua a la más
+ * reciente, en escala fija 0-100 % para que las 3 gráficas de un minijuego se lean
+ * una junto a otra. Con una sola sesión dibuja solo el punto; sin sesiones, el mensaje
+ * `emptyMessage`. Devuelve el `y` del borde inferior del área de trazado.
+ */
+export function drawLevelChart(
+  doc: jsPDF,
+  opts: {
+    x: number
+    y: number
+    width: number
+    height: number
+    title: string
+    values: number[]
+    color: [number, number, number]
+    emptyMessage: string
+  },
+): number {
+  const { x, y, width, height, title, values, color, emptyMessage } = opts
+  const axisLabelWidth = 18
+  const plotX = x + axisLabelWidth
+  const plotWidth = width - axisLabelWidth
+  const top = y + LEVEL_CHART_TITLE_HEIGHT
+  const bottom = top + height
+
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(8)
+  doc.setTextColor(50, 50, 50)
+  doc.text(title, x, y)
+
+  // Ejes y línea de referencia al 50 %: hairlines sólidas y recesivas, igual que en la UI.
   doc.setDrawColor(225, 224, 217)
   doc.setLineWidth(0.5)
-  doc.line(x, y, x, bottom)
-  doc.line(x, bottom, x + width, bottom)
+  doc.line(plotX, top, plotX, bottom)
+  doc.line(plotX, bottom, plotX + plotWidth, bottom)
+  doc.line(plotX, top + height / 2, plotX + plotWidth, top + height / 2)
 
-  if (values.length < 2) {
-    doc.setFontSize(8.5)
-    doc.setTextColor(140, 140, 140)
-    doc.text('No hay suficientes sesiones con puntaje para graficar el progreso.', x + 8, y + height / 2)
-    return bottom + 24
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(6.5)
+  doc.setTextColor(140, 140, 140)
+  doc.text('100%', plotX - 2, top + 2, { align: 'right' })
+  doc.text('50%', plotX - 2, top + height / 2 + 2, { align: 'right' })
+  doc.text('0%', plotX - 2, bottom + 2, { align: 'right' })
+
+  if (values.length === 0) {
+    doc.setFontSize(7.5)
+    doc.text(emptyMessage, plotX + plotWidth / 2, top + height / 2 + 3, { align: 'center', maxWidth: plotWidth - 8 })
+    return bottom
   }
 
-  const max = Math.max(...values, 1)
-  const stepX = width / (values.length - 1)
+  const pad = 8
+  const stepX = values.length > 1 ? (plotWidth - 2 * pad) / (values.length - 1) : 0
+  const pointX = (i: number) => (values.length > 1 ? plotX + pad + i * stepX : plotX + plotWidth / 2)
+  const pointY = (v: number) => bottom - (Math.max(0, Math.min(100, v)) / 100) * height
 
   doc.setDrawColor(...color)
   doc.setLineWidth(1.1)
-  let prevX = x
-  let prevY = bottom - (values[0] / max) * height
   for (let i = 1; i < values.length; i++) {
-    const px = x + i * stepX
-    const py = bottom - (values[i] / max) * height
-    doc.line(prevX, prevY, px, py)
-    prevX = px
-    prevY = py
+    doc.line(pointX(i - 1), pointY(values[i - 1]), pointX(i), pointY(values[i]))
   }
 
   doc.setFillColor(...color)
   for (let i = 0; i < values.length; i++) {
-    const px = x + i * stepX
-    const py = bottom - (values[i] / max) * height
-    doc.circle(px, py, 1.3, 'F')
+    doc.circle(pointX(i), pointY(values[i]), 1.8, 'F')
   }
 
+  // Solo el último punto lleva su valor — el resto se lee contra el eje.
+  const last = values.length - 1
+  doc.setFont('helvetica', 'bold')
   doc.setFontSize(7.5)
-  doc.setTextColor(140, 140, 140)
-  doc.text('0', x - 2, bottom + 8, { align: 'right' })
-  doc.text(String(max), x - 2, y + 3, { align: 'right' })
+  doc.setTextColor(40, 40, 40)
+  doc.text(`${values[last]}%`, pointX(last), pointY(values[last]) - 4, { align: 'center' })
+  doc.setFont('helvetica', 'normal')
 
-  return bottom + 24
+  return bottom
 }

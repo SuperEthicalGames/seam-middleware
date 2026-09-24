@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { computeExercisePerformance } from './exercisePerformance'
+import { computeExerciseLevelPerformance, computeExercisePerformance } from './exercisePerformance'
 import type { NormalizedSession } from '@/types/game'
 
 function session(overrides: Partial<NormalizedSession>): NormalizedSession {
@@ -174,5 +174,114 @@ describe('computeExercisePerformance', () => {
       ]
       expect(computeExercisePerformance(sessions, 'game1')[0].trend).toBe('mejorando')
     })
+  })
+})
+
+describe('computeExerciseLevelPerformance', () => {
+  it('devuelve siempre los 3 niveles en orden Básico → Medio → Avanzado, aunque alguno no tenga sesiones', () => {
+    const result = computeExerciseLevelPerformance([session({ difficulty: 'hard', difficultyRaw: 'HARD' })], 'game1')
+    expect(result[0].levels.map((l) => l.level)).toEqual(['easy', 'medium', 'hard'])
+    expect(result[0].levels.map((l) => l.count)).toEqual([0, 0, 1])
+    expect(result[0].levels[0].avgScorePercent).toBeNull()
+  })
+
+  it('separa cada minijuego por nivel y nunca mezcla sesiones de minijuegos distintos', () => {
+    const sessions = [
+      session({ exercise: 'exercise1', difficulty: 'easy', score: 90 }),
+      session({ exercise: 'exercise1', difficulty: 'hard', score: 40 }),
+      session({ exercise: 'exercise2', difficulty: 'easy', score: 10 }),
+    ]
+    const result = computeExerciseLevelPerformance(sessions, 'game1')
+    const ex1 = result.find((r) => r.exercise === 'exercise1')!
+    const ex2 = result.find((r) => r.exercise === 'exercise2')!
+    expect(ex1.levels[0].points.map((p) => p.scorePercent)).toEqual([90])
+    expect(ex1.levels[1].count).toBe(0)
+    expect(ex1.levels[2].points.map((p) => p.scorePercent)).toEqual([40])
+    expect(ex2.levels[0].points.map((p) => p.scorePercent)).toEqual([10])
+    expect(ex2.levels[2].count).toBe(0)
+  })
+
+  it('ordena los puntos de cada nivel cronológicamente y los numera desde 1, sin importar el orden de llegada', () => {
+    const sessions = [
+      session({ date: '2026-01-03', score: 90 }),
+      session({ date: '2026-01-01', score: 50 }),
+      session({ date: '2026-01-02', score: 70 }),
+    ]
+    const easy = computeExerciseLevelPerformance(sessions, 'game1')[0].levels[0]
+    expect(easy.points.map((p) => p.n)).toEqual([1, 2, 3])
+    expect(easy.points.map((p) => p.date)).toEqual(['2026-01-01', '2026-01-02', '2026-01-03'])
+    expect(easy.points.map((p) => p.scorePercent)).toEqual([50, 70, 90])
+    expect(easy.avgScorePercent).toBe(70)
+  })
+
+  it('expresa el puntaje como % de la referencia propia de cada minijuego de Cafetero', () => {
+    const sessions = [
+      session({ game: 'game3', exercise: 'CoffeeClassification', difficulty: 'medium', score: 1250 }),
+      session({ game: 'game3', exercise: 'CoffeeWash', difficulty: 'medium', score: 50 }),
+    ]
+    const result = computeExerciseLevelPerformance(sessions, 'game3')
+    const classification = result.find((r) => r.exercise === 'CoffeeClassification')!
+    const wash = result.find((r) => r.exercise === 'CoffeeWash')!
+    expect(classification.levels[1].points[0].scorePercent).toBe(50) // 1250/2500
+    expect(wash.levels[1].points[0].scorePercent).toBe(50) // 50/100
+  })
+
+  it('cuenta las sesiones sin puntaje pero no genera un punto para ellas', () => {
+    const sessions = [session({ score: null }), session({ score: 80 })]
+    const easy = computeExerciseLevelPerformance(sessions, 'game1')[0].levels[0]
+    expect(easy.count).toBe(2)
+    expect(easy.points).toHaveLength(1)
+    expect(easy.avgScorePercent).toBe(80)
+  })
+
+  it('no grafica las sesiones sin nivel reconocido pero las cuenta aparte', () => {
+    const sessions = [session({ difficulty: 'unknown', difficultyRaw: null }), session({ difficulty: 'easy' })]
+    const result = computeExerciseLevelPerformance(sessions, 'game1')[0]
+    expect(result.count).toBe(2)
+    expect(result.unknownLevelCount).toBe(1)
+    expect(result.levels.map((l) => l.count)).toEqual([1, 0, 0])
+  })
+
+  it('agrupa "exercisedance" y "dance exercise" de Cartagena como el mismo minijuego', () => {
+    const sessions = [
+      session({ game: 'game2', exercise: 'dance exercise', difficulty: 'easy', date: '2025-01-23' }),
+      session({ game: 'game2', exercise: 'exercisedance', difficulty: 'easy', date: '2025-08-20' }),
+    ]
+    const result = computeExerciseLevelPerformance(sessions, 'game2')
+    expect(result).toHaveLength(1)
+    expect(result[0].levels[0].count).toBe(2)
+  })
+
+  it('descarta sesiones sin ejercicio identificado', () => {
+    expect(computeExerciseLevelPerformance([session({ exercise: null })], 'game1')).toEqual([])
+  })
+
+  it('calcula la velocidad de cada punto con la referencia de tiempo de su minijuego/nivel', () => {
+    const sessions = [
+      session({ game: 'game3', exercise: 'CoffeeCollection', difficulty: 'easy', durationSeconds: 0 }),
+      session({ game: 'game1', exercise: 'exercise-desconocido', durationSeconds: 60 }),
+    ]
+    const cafetero = computeExerciseLevelPerformance(sessions, 'game3')[0]
+    expect(cafetero.levels[0].points[0].speedPercent).toBe(100)
+    const desconocido = computeExerciseLevelPerformance(sessions, 'game1')[0]
+    expect(desconocido.levels[0].points[0].speedPercent).toBeNull()
+  })
+
+  it('conserva el orden fijo de los minijuegos de Cafetero, no la cantidad de sesiones', () => {
+    const sessions = [
+      session({ game: 'game3', exercise: 'CoffeeWash' }),
+      session({ game: 'game3', exercise: 'CoffeeWash' }),
+      session({ game: 'game3', exercise: 'CoffeeElaboration' }),
+      session({ game: 'game3', exercise: 'CoffeeCollection' }),
+      session({ game: 'game3', exercise: 'CoffeeTransportation' }),
+      session({ game: 'game3', exercise: 'CoffeeClassification' }),
+    ]
+    expect(computeExerciseLevelPerformance(sessions, 'game3').map((r) => r.exercise)).toEqual([
+      'CoffeeCollection',
+      'CoffeeTransportation',
+      'CoffeeClassification',
+      'CoffeeWash',
+      'CoffeeElaboration',
+    ])
   })
 })

@@ -31,7 +31,7 @@ export default defineConfig(({ mode }) => ({
     },
     // El chunk de charts (recharts + sus dependencias D3) ronda ~526 kB porque no se
     // usa ninguna otra librería adicional a propósito, no por imports sin tree-shaking
-    // (los 9 componentes en src/charts/ ya importan solo los named exports que usan).
+    // (los componentes en src/charts/ ya importan solo los named exports que usan).
     // Con el filtro de modulePreload de arriba, este chunk nunca bloquea /login: se
     // resuelve por separado cuando de verdad se navega a una página con gráficos.
     chunkSizeWarningLimit: 600,

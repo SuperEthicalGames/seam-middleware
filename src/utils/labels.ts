@@ -47,7 +47,7 @@ export function canonicalExercise(raw: string): string {
  * clasificar → lavar → elaborar) o el orden de los minijuegos (Amazonas), no la
  * cantidad de sesiones ni el orden en que llegan los datos. Un juego que no aparece
  * aquí (Cartagena, que solo tiene 1 minijuego) sigue ordenado por cantidad de sesiones
- * — ver computeExercisePerformance, el único lugar que lo usa.
+ * — ver sortByExerciseOrder en exercisePerformance.ts, el único lugar que lo usa.
  */
 export const FIXED_EXERCISE_ORDER: Partial<Record<GameId, string[]>> = {
   game1: ['exercise1', 'exercise2', 'exercise3'],

@@ -28,7 +28,7 @@ export interface PatientConclusions {
  * Síntesis puramente estadística y descriptiva de los datos ya calculados
  * (exercisePerformance.ts) — nunca una interpretación clínica ni un diagnóstico
  * (prohibido explícitamente, sección 21 del prompt original). Solo resume lo que
- * ya está en la tabla "Capacidad fisioterapéutica por ejercicio" de cada juego.
+ * ya está en la tabla "Desempeño por Actividad" de cada juego.
  */
 export function computePatientConclusions(profile: ConsolidatedProfile, filters: SessionFilters): PatientConclusions {
   const allExercises: (ExercisePerformance & { game: GameId })[] = []

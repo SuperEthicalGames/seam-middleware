@@ -9,9 +9,9 @@ import { formatDateEs, formatDifficultyLabel, formatDurationEs } from '@/utils/n
 import { formatExerciseLabel } from '@/utils/labels'
 import { estimateCafeteroStars } from '@/utils/estimatedStars'
 import { computeSessionStats } from '@/utils/patientStats'
-import { computeExercisePerformance, type PerformanceTrend } from '@/utils/exercisePerformance'
+import { computeExerciseLevelPerformance, computeExercisePerformance, type PerformanceTrend } from '@/utils/exercisePerformance'
 import { computePatientConclusions, formatConclusionsText } from '@/utils/patientConclusions'
-import { drawHorizontalBarChart, drawLineChart, drawRatingCircles } from './pdfCharts'
+import { drawHorizontalBarChart, drawLevelChart, drawRatingCircles } from './pdfCharts'
 
 interface GenerateParams {
   profile: ConsolidatedProfile
@@ -44,14 +44,6 @@ function getStarInfo(s: NormalizedSession): StarInfo | null {
   if (s.stars !== null) return { filled: s.stars, estimated: false }
   const estimated = s.game === 'game3' ? estimateCafeteroStars(s.score, s.exercise) : null
   return estimated === null ? null : { filled: estimated, estimated: true }
-}
-
-function chronologicalScores(sessions: NormalizedSession[]): number[] {
-  return sessions
-    .filter((s) => s.score !== null)
-    .slice()
-    .sort((a, b) => (a.date ?? '').localeCompare(b.date ?? '') || (a.hour ?? '').localeCompare(b.hour ?? ''))
-    .map((s) => s.score as number)
 }
 
 export function generatePatientReportPdf({ profile, filters, generatedByEmail }: GenerateParams): void {
@@ -188,16 +180,10 @@ export function generatePatientReportPdf({ profile, filters, generatedByEmail }:
     )
     y += 18
 
-    // Gráfico: progreso de puntaje en el tiempo (mismo dato que ScoreTrendChart en la UI)
-    const scores = chronologicalScores(filtered)
-    subheading('Progreso de puntaje')
-    ensureSpace(90)
-    y = drawLineChart(doc, { x: marginX + 20, y, width: contentWidth - 20, height: 70, values: scores, color: gameColor })
-
-    // Capacidad fisioterapéutica por ejercicio/minijuego — el análisis central del portal
+    // Desempeño por actividad (ejercicio/minijuego) — el análisis central del portal
     const exerciseRows = computeExercisePerformance(filtered, r.game)
     if (exerciseRows.length > 0) {
-      subheading('Capacidad fisioterapéutica por ejercicio')
+      subheading('Desempeño por Actividad')
 
       autoTable(doc, {
         startY: y + 6,
@@ -231,6 +217,45 @@ export function generatePatientReportPdf({ profile, filters, generatedByEmail }:
         y = drawHorizontalBarChart(doc, { x: marginX, y, width: contentWidth, labelWidth: 150, data: barData, max: 100, color: gameColor })
         y += 10
       }
+
+      // Una fila por minijuego con una gráfica por nivel de dificultad, todas en la misma
+      // escala 0-100 % para comparar el rendimiento entre niveles del MISMO minijuego
+      // (mismo dato que ExerciseLevelCharts en la UI).
+      ensureSpace(140) // que el título no quede solo al final de una página, sin su primera fila de gráficas
+      subheading('Rendimiento por nivel de dificultad (% de una partida de referencia)')
+      y += 12
+      const chartColumnWidth = contentWidth / 3
+      for (const ex of computeExerciseLevelPerformance(filtered, r.game)) {
+        ensureSpace(100)
+        doc.setFont('helvetica', 'bold')
+        doc.setFontSize(9)
+        doc.setTextColor(50, 50, 50)
+        doc.text(formatExerciseLabel(ex.exercise), marginX, y)
+        y += 14
+
+        const bottoms = ex.levels.map((level, i) =>
+          drawLevelChart(doc, {
+            x: marginX + i * chartColumnWidth,
+            y,
+            width: chartColumnWidth - 14,
+            height: 46,
+            title: `${formatDifficultyLabel(level.level)} · ${level.count} ses.${level.avgScorePercent === null ? '' : ` · prom. ${level.avgScorePercent}%`}`,
+            values: level.points.map((p) => p.scorePercent),
+            color: gameColor,
+            emptyMessage: level.count === 0 ? 'Sin sesiones en este nivel' : 'Sin puntaje registrado',
+          }),
+        )
+        y = Math.max(...bottoms) + 16
+
+        if (ex.unknownLevelCount > 0) {
+          doc.setFont('helvetica', 'normal')
+          doc.setFontSize(7.5)
+          doc.setTextColor(140, 140, 140)
+          doc.text(`${ex.unknownLevelCount} ses. de este minijuego sin nivel de dificultad registrado no se grafican.`, marginX, y - 6)
+          y += 8
+        }
+      }
+      y += 8
     }
 
     // Detalle de sesiones (dato crudo, para trazabilidad completa)
