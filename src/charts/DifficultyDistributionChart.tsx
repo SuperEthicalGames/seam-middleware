@@ -6,7 +6,7 @@ import type { NormalizedDifficulty } from '@/types/game'
 
 // Mismo family de color que las badges de dificultad en las tablas (SessionsTable ->
 // Badge tone="success"/"info"/"danger"/"neutral"): fácil=teal de marca, media=azul,
-// difícil=rojo, desconocida=gris ink — para que el dashboard y el perfil de paciente
+// difícil=rojo, desconocida=gris ink — para que el dashboard y el perfil de usuario
 // se lean igual. Antes esto reusaba por error STATUS_COLORS.good/critical (verde/rojo
 // genéricos de "seriales activos") y el azul categórico de Amazonas — colores con un
 // significado distinto en otros gráficos, no el teal/azul/rojo reales de las badges.

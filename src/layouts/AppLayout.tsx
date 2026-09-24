@@ -21,7 +21,7 @@ function isGameId(value: string | undefined): value is GameId {
 function getPageMeta(pathname: string, gameId: string | undefined, fromParent: HeaderParent | undefined): PageMeta {
   if (pathname === '/') return { title: 'Dashboard' }
   if (pathname.startsWith('/buscar')) return { title: 'Buscar usuario' }
-  if (pathname.startsWith('/paciente/')) {
+  if (pathname.startsWith('/usuario/')) {
     // El perfil consolidado se llega tanto desde Buscar usuario como desde
     // Juegos -> Usuarios -> Ver perfil -- quien navega hasta aquí pasa de dónde
     // viene por location.state (ver Search.tsx / GameDetail.tsx). Sin ese state

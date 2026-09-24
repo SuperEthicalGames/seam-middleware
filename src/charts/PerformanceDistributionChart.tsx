@@ -13,7 +13,7 @@ const ORDER: PerformanceBand[] = ['bajo', 'medio', 'alto']
 
 /**
  * Dónde se concentran todas las sesiones (de los 3 juegos) según su puntaje
- * normalizado — una vista de la población completa, no de un paciente individual.
+ * normalizado — una vista de la población completa, no de un usuario individual.
  */
 export function PerformanceDistributionChart({ distribution }: { distribution: Record<PerformanceBand, number> }) {
   const total = ORDER.reduce((acc, b) => acc + distribution[b], 0)

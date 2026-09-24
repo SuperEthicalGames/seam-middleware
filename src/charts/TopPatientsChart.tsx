@@ -16,7 +16,7 @@ const SORT_OPTIONS: { value: SortBy; label: string }[] = [
   { value: 'identifier', label: 'Identificador (A-Z)' },
 ]
 
-/** Cuántos pacientes mostrar cuando no hay un juego específico seleccionado — evita
+/** Cuántos usuarios mostrar cuando no hay un juego específico seleccionado — evita
  * que el gráfico crezca sin control si los 3 juegos aportan varios cada uno. */
 const MAX_WHEN_ALL_GAMES = 8
 

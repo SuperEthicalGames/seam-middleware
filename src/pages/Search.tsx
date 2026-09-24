@@ -51,7 +51,7 @@ export function Search() {
   function goToPatient(identifier: string) {
     // Igual que desde Juegos -> Usuarios: le dice a AppLayout/Sidebar de dónde viene
     // esta navegación, para que "volver" apunte aquí y no a un destino fijo.
-    navigate(`/paciente/${encodeURIComponent(identifier)}`, { state: { from: { label: 'Buscar usuario', to: '/buscar' } } })
+    navigate(`/usuario/${encodeURIComponent(identifier)}`, { state: { from: { label: 'Buscar usuario', to: '/buscar' } } })
   }
 
   const columns: Column<PatientDirectoryRow>[] = [

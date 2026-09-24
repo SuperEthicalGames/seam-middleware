@@ -49,7 +49,7 @@ function sortForDisplay(rows: PopulationExercisePerformance[], sortBy: SortBy): 
 
 /**
  * Rendimiento promedio (% de una partida de referencia) por ejercicio, agregando
- * TODOS los pacientes de cada juego. Filtrable por juego y con varios órdenes —
+ * TODOS los usuarios de cada juego. Filtrable por juego y con varios órdenes —
  * por defecto resalta primero los ejercicios donde más le cuesta a la población.
  */
 export function ExercisePerformanceOverviewChart({ data }: { data: PopulationExercisePerformance[] }) {

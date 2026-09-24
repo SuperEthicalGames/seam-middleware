@@ -58,7 +58,7 @@ export interface PatientDirectory {
 
 /**
  * A diferencia de findConsolidatedProfile (busca UN identificador puntual), esto trae
- * TODOS los pacientes de los 3 juegos para explorar/filtrar sin conocer la cédula
+ * TODOS los usuarios de los 3 juegos para explorar/filtrar sin conocer la cédula
  * completa de antemano — dataset pequeño (decenas de usuarios por juego), lectura
  * directa igual que Dashboard/GameDetail. Un mismo identificador que aparece en varios
  * juegos se deduplica en una sola fila, listando en qué juegos aparece.

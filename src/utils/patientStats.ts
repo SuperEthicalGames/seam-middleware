@@ -7,7 +7,7 @@ export interface SessionStats {
   avgDurationSeconds: number | null
 }
 
-/** Estadísticas de rendimiento a partir de las sesiones YA filtradas de un paciente en un juego. */
+/** Estadísticas de rendimiento a partir de las sesiones YA filtradas de un usuario en un juego. */
 export function computeSessionStats(sessions: NormalizedSession[]): SessionStats {
   const scores = sessions.map((s) => s.score).filter((s): s is number => s !== null)
   const durations = sessions.map((s) => s.durationSeconds).filter((d): d is number => d !== null)
@@ -20,7 +20,7 @@ export function computeSessionStats(sessions: NormalizedSession[]): SessionStats
   }
 }
 
-/** Cuántas sesiones jugó en cada nivel de dificultad — mismo dato usado en el Dashboard, aquí a nivel de un solo paciente. */
+/** Cuántas sesiones jugó en cada nivel de dificultad — mismo dato usado en el Dashboard, aquí a nivel de un solo usuario. */
 export function computeDifficultyDistribution(sessions: NormalizedSession[]): Record<NormalizedDifficulty, number> {
   const distribution: Record<NormalizedDifficulty, number> = { easy: 0, medium: 0, hard: 0, unknown: 0 }
   for (const s of sessions) distribution[s.difficulty] += 1

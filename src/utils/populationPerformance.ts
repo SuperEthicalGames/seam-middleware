@@ -12,9 +12,9 @@ export interface PopulationExercisePerformance {
 }
 
 /**
- * Rendimiento promedio por ejercicio agregando las sesiones de TODOS los pacientes de
- * cada juego — a diferencia de `computeExercisePerformance` (un paciente), esto nunca
- * calcula una `trend`: mezclar sesiones de pacientes distintos en orden cronológico no
+ * Rendimiento promedio por ejercicio agregando las sesiones de TODOS los usuarios de
+ * cada juego — a diferencia de `computeExercisePerformance` (un usuario), esto nunca
+ * calcula una `trend`: mezclar sesiones de usuarios distintos en orden cronológico no
  * refleja la evolución de nadie en particular, así que ese campo se descarta a propósito
  * en vez de mostrar una tendencia poblacional engañosa.
  */
@@ -60,7 +60,7 @@ function distributionForSessions(sessions: NormalizedSession[], game: GameId): R
 /**
  * Distribución de todas las sesiones (de los 3 juegos) según su puntaje normalizado
  * (% de una partida de referencia, ver scoreReference.ts) — da una vista general de
- * dónde se concentra el rendimiento de la población de pacientes, no de un individuo.
+ * dónde se concentra el rendimiento de la población de usuarios, no de un individuo.
  */
 export function computePerformanceDistribution(sessionsByGame: Record<GameId, NormalizedSession[]>): Record<PerformanceBand, number> {
   const distribution: Record<PerformanceBand, number> = { bajo: 0, medio: 0, alto: 0 }

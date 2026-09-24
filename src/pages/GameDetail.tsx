@@ -21,7 +21,7 @@ export function GameDetail() {
   const { gameId } = useParams<{ gameId: string }>()
   const navigate = useNavigate()
   // La pestaña activa vive en la URL (?tab=usuarios), no en estado local — así
-  // "volver" desde el perfil de un paciente puede reconstruir exactamente esta
+  // "volver" desde el perfil de un usuario puede reconstruir exactamente esta
   // misma pestaña en vez de reiniciar siempre en "resumen".
   const [searchParams, setSearchParams] = useSearchParams()
   const tabParam = searchParams.get('tab')
@@ -72,7 +72,7 @@ export function GameDetail() {
         <button
           className="btn-secondary"
           onClick={() =>
-            navigate(`/paciente/${encodeURIComponent(u.identifier)}`, {
+            navigate(`/usuario/${encodeURIComponent(u.identifier)}`, {
               state: { from: { label: GAME_CATALOG[game].displayName, to: `/juegos/${game}?tab=usuarios` } },
             })
           }

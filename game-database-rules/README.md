@@ -3,7 +3,7 @@
 Ver `LIMITATIONS.md` sección 1 ("Seguridad de las bases de los juegos") para el
 hallazgo original: `identificators`, `serials` y `users` en las tres Realtime Database
 de los juegos (Amazonas, Cartagena, Cafetero) permiten hoy lectura y escritura **sin
-autenticar** — cualquiera con la URL puede leer las cédulas de los pacientes.
+autenticar** — cualquiera con la URL puede leer las cédulas de los usuarios.
 
 Estos 3 archivos son las Rules a las que se quiere llegar: mismos paths, mismos
 permisos de lectura/escritura que hoy, con un único cambio — exigir `auth != null`.
@@ -15,7 +15,7 @@ no tiene sesión.
 Ninguna app (ni las 3 de Unity/Quest, ni el portal `seam-middleware`) inicia sesión
 hoy contra estos 3 proyectos de Firebase — es justamente por eso que las Rules
 tuvieron que quedar abiertas. Publicar estas Rules antes de que algo se autentique
-rompería todo: los pacientes no podrían jugar ni guardar su progreso, y el portal no
+rompería todo: los usuarios no podrían jugar ni guardar su progreso, y el portal no
 podría leer ni activar seriales.
 
 **Orden obligatorio:**
@@ -39,5 +39,5 @@ podría leer ni activar seriales.
    apunta al proyecto central `seam-middleware`, ver `firebase.json`).
 
 Publicar cualquiera de estos archivos antes del paso 1–4 completo para ese juego
-específico corta el acceso a pacientes reales en plena sesión de fisioterapia. No
+específico corta el acceso a usuarios reales en plena sesión de fisioterapia. No
 publicar sin haber confirmado el paso 4.

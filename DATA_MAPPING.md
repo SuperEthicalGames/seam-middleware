@@ -97,7 +97,7 @@ Mismo patrón conceptual (hash string → serial code string → `0`/`1`), pero 
 
 | Capacidad / Campo | Game 1 (`seam-data-as`) | Game 2 (`seam-data-cartagena`) | Game 3 (`seam-data-game`) | Normalizable |
 |---|---|---|---|---|
-| Identificador de paciente | `users/{uid}.cedula` (string) | `users/{uid}.cedula` (string) | `users/{uid}.CC` (string) | Sí → `identifier` |
+| Identificador de usuario | `users/{uid}.cedula` (string) | `users/{uid}.cedula` (string) | `users/{uid}.CC` (string) | Sí → `identifier` |
 | Log de sesiones | `users/{uid}.record.gameNN` | `users/{uid}.record.gameNN` | `users/{uid}.results.gameNN` | Sí → `NormalizedSession[]` |
 | Vista agregada mejor-resultado | `users/{uid}.results.<exp>.difficult.<niv>` | igual que G1 | **no existe** | Parcial (solo G1/G2) |
 | Fecha | `date` = `DD/MM/YYYY` | igual | `date` = `DD/MM/YYYY` | Sí, mismo formato en los 3 |
@@ -117,7 +117,7 @@ Mismo patrón conceptual (hash string → serial code string → `0`/`1`), pero 
 
 Verificado empíricamente (no supuesto): **no existe ningún campo en `users`, `identificators` ni `serials` que enlace explícitamente un usuario (UID/cédula) con un serial concreto.** `identificators` es un mapeo `hash largo → código de serial`, pero el hash no es la cédula ni el UID en texto plano (son hashes de 64 hex, probablemente SHA-256 de algo generado por la app Unity — dispositivo, o cédula + salt, no se puede determinar sin el código fuente de Unity).
 
-**Consecuencia para el portal:** el módulo de Seriales puede listar/activar/desactivar seriales por su código, pero **no puede mostrar automáticamente "este serial pertenece a este paciente"**. Esto se documentará como limitación (ver `LIMITATIONS.md`) en vez de inventar una relación.
+**Consecuencia para el portal:** el módulo de Seriales puede listar/activar/desactivar seriales por su código, pero **no puede mostrar automáticamente "este serial pertenece a este usuario"**. Esto se documentará como limitación (ver `LIMITATIONS.md`) en vez de inventar una relación.
 
 ## 6. Consolidación cross-juego — verificado con datos reales
 
@@ -141,7 +141,7 @@ Esto confirma el diseño requerido: la consolidación debe hacerse por **cédula
 NormalizedUser {
   identifier: string        // users.cedula | users.CC
   game: 'game1' | 'game2' | 'game3'
-  uid: string                // clave del nodo users — solo interno, no se muestra como "el" identificador del paciente
+  uid: string                // clave del nodo users — solo interno, no se muestra como "el" identificador del usuario
   hasActivity: boolean        // existe record/results
 }
 

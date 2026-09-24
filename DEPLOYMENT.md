@@ -50,7 +50,7 @@ Repetir la lista de la sección 75 del prompt original contra la URL pública de
 - [ ] Login / logout
 - [ ] Recuperación de contraseña (revisa que llegue el correo)
 - [ ] Rutas protegidas (entrar a una URL interna sin sesión redirige a `/login`)
-- [ ] Recargar la página en una ruta interna (p.ej. `/#/paciente/123`) no da 404 — específico de GitHub Pages, que no reescribe rutas en el servidor (por eso el router usa `HashRouter`)
+- [ ] Recargar la página en una ruta interna (p.ej. `/#/usuario/123`) no da 404 — específico de GitHub Pages, que no reescribe rutas en el servidor (por eso el router usa `HashRouter`)
 - [ ] Dashboard carga métricas de los 3 juegos
 - [ ] Búsqueda por cédula/CC devuelve resultados independientes por juego
 - [ ] Perfil consolidado con filtros funcionando

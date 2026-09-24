@@ -207,7 +207,7 @@ export function generatePatientReportPdf({ profile, filters, generatedByEmail }:
       y = (doc as any).lastAutoTable.finalY + 20
 
       // Gráfico: rendimiento (%) por ejercicio — normalizado, sí comparable entre
-      // ejercicios de un mismo paciente (ver scoreReference.ts).
+      // ejercicios de un mismo usuario (ver scoreReference.ts).
       const barData = exerciseRows
         .filter((ex) => ex.avgScorePercent !== null)
         .map((ex) => ({ label: formatExerciseLabel(ex.exercise), value: ex.avgScorePercent as number, displayValue: `${ex.avgScorePercent}%` }))

@@ -1,5 +1,5 @@
 import { lazy } from 'react'
-import { HashRouter, Routes, Route } from 'react-router-dom'
+import { HashRouter, Routes, Route, Navigate, useParams } from 'react-router-dom'
 import { AuthProvider } from '@/auth/AuthContext'
 import { ProtectedRoute } from '@/auth/ProtectedRoute'
 import { ToastProvider } from '@/components/ToastProvider'
@@ -22,23 +22,30 @@ const Admins = lazy(() => import('@/pages/Admins').then((m) => ({ default: m.Adm
 const AuditLog = lazy(() => import('@/pages/AuditLog').then((m) => ({ default: m.AuditLog })))
 const Profile = lazy(() => import('@/pages/Profile').then((m) => ({ default: m.Profile })))
 
+/** Enlaces guardados o compartidos antes de renombrar la ruta (`#/paciente/:id`): siguen abriendo el perfil. */
+function LegacyUserRedirect() {
+  const { identifier = '' } = useParams<{ identifier: string }>()
+  return <Navigate to={`/usuario/${encodeURIComponent(identifier)}`} replace />
+}
+
 export function App() {
   return (
     <ToastProvider>
       <AuthProvider>
         {/* HashRouter (URLs con #) en vez de BrowserRouter: publicado en GitHub Pages,
             que no puede reescribir rutas al servidor — con BrowserRouter, recargar o
-            compartir un link directo a /paciente/123 daría 404. */}
+            compartir un link directo a /usuario/123 daría 404. */}
         <HashRouter>
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/recuperar" element={<ForgotPassword />} />
+            <Route path="/paciente/:identifier" element={<LegacyUserRedirect />} />
 
             <Route element={<ProtectedRoute />}>
               <Route element={<AppLayout />}>
                 <Route path="/" element={<Dashboard />} />
                 <Route path="/buscar" element={<Search />} />
-                <Route path="/paciente/:identifier" element={<PatientProfile />} />
+                <Route path="/usuario/:identifier" element={<PatientProfile />} />
                 <Route path="/juegos" element={<GamesList />} />
                 <Route path="/juegos/:gameId" element={<GameDetail />} />
                 <Route path="/seriales" element={<Serials />} />

@@ -37,9 +37,9 @@ export interface DashboardData {
   difficultyDistribution: Record<NormalizedDifficulty, number>
   /** Misma distribución, separada por juego — para el filtro "Juego" del gráfico en el dashboard. */
   difficultyDistributionByGame: Record<GameId, Record<NormalizedDifficulty, number>>
-  /** Pacientes con más sesiones registradas, por juego (el eje central del portal: rendimiento del paciente). */
+  /** Usuarios con más sesiones registradas, por juego (el eje central del portal: rendimiento del usuario). */
   topPatients: TopPatient[]
-  /** Rendimiento promedio por ejercicio, agregando las sesiones de todos los pacientes de cada juego. */
+  /** Rendimiento promedio por ejercicio, agregando las sesiones de todos los usuarios de cada juego. */
   exercisePerformance: PopulationExercisePerformance[]
   /** Dónde se concentran (bajo/medio/alto) todas las sesiones con puntaje normalizado conocido. */
   performanceDistribution: Record<PerformanceBand, number>
@@ -49,7 +49,7 @@ export interface DashboardData {
 
 /**
  * Trae usuarios y seriales de los 3 juegos (datasets pequeños, lectura directa) y, para
- * los gráficos de actividad y de rendimiento de pacientes, las sesiones de cada usuario
+ * los gráficos de actividad y de rendimiento de usuarios, las sesiones de cada usuario
  * con actividad. A esta escala (decenas de usuarios) es una cantidad de lecturas
  * razonable; si el volumen creciera mucho, este sería el punto a paginar o precalcular.
  */

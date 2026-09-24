@@ -22,7 +22,7 @@ function session(overrides: Partial<NormalizedSession>): NormalizedSession {
 }
 
 describe('computePopulationExercisePerformance', () => {
-  it('agrega sesiones de distintos pacientes del mismo juego sin calcular una tendencia poblacional', () => {
+  it('agrega sesiones de distintos usuarios del mismo juego sin calcular una tendencia poblacional', () => {
     const byGame: Record<GameId, NormalizedSession[]> = {
       game1: [
         session({ uid: 'p1', exercise: 'exercise1', score: 40 }),
