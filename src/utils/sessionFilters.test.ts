@@ -17,6 +17,13 @@ function session(overrides: Partial<NormalizedSession>): NormalizedSession {
     stars: 3,
     durationSeconds: 60,
     durationRaw: '1:00 seconds',
+    isWin: null,
+    timestampUtc: null,
+    scoreModel: null,
+    sessionId: null,
+    attempt: null,
+    device: null,
+    metrics: null,
     ...overrides,
   }
 }

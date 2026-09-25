@@ -4,6 +4,7 @@ import { Badge } from './Badge'
 import { formatDateEs, formatDifficultyLabel, formatDurationEs } from '@/utils/normalize'
 import { formatExerciseLabel } from '@/utils/labels'
 import { estimateCafeteroStars } from '@/utils/estimatedStars'
+import { sessionResult } from '@/utils/sessionResult'
 
 const DIFFICULTY_TONE = {
   easy: 'success',
@@ -81,10 +82,48 @@ export function SessionsTable({ sessions, loading, error, onRetry }: { sessions:
       sortValue: (s) => s.stars ?? (s.game === 'game3' ? (estimateCafeteroStars(s.score, s.exercise) ?? -1) : -1),
     },
     {
+      key: 'result',
+      header: 'Resultado',
+      render: (s) => {
+        const result = sessionResult(s)
+        if (result === null) {
+          return (
+            <span className="text-xs text-ink-400" title="Este intento no guardó si se ganó o se perdió.">
+              No registrado
+            </span>
+          )
+        }
+        return <Badge tone={result === 'win' ? 'success' : 'danger'}>{result === 'win' ? 'Ganó' : 'Perdió'}</Badge>
+      },
+      sortValue: (s) => {
+        const result = sessionResult(s)
+        return result === 'win' ? 2 : result === 'loss' ? 1 : 0
+      },
+    },
+    {
       key: 'duration',
       header: 'Duración',
       render: (s) => formatDurationEs(s.durationSeconds),
       sortValue: (s) => s.durationSeconds ?? -1,
+    },
+    {
+      key: 'errors',
+      header: 'Errores',
+      render: (s) => {
+        const m = s.metrics
+        if (m === null || m.errors === null) return <span className="text-xs text-ink-400">No registrado</span>
+        return (
+          <div>
+            <div>{m.errors}</div>
+            {(m.leftCount !== null || m.rightCount !== null) && (
+              <div className="text-xs text-ink-400" title="Acciones correctas con cada brazo">
+                Izq. {m.leftCount ?? 0} · Der. {m.rightCount ?? 0}
+              </div>
+            )}
+          </div>
+        )
+      },
+      sortValue: (s) => s.metrics?.errors ?? -1,
     },
   ]
 

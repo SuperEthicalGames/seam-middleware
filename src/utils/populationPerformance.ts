@@ -1,6 +1,6 @@
 import type { GameId, NormalizedSession } from '@/types/game'
 import { computeExercisePerformance } from './exercisePerformance'
-import { scoreToPercent } from './scoreReference'
+import { sessionScorePercent } from './scoreReference'
 
 export interface PopulationExercisePerformance {
   game: GameId
@@ -47,10 +47,10 @@ function bandFor(percent: number): PerformanceBand {
   return 'alto'
 }
 
-function distributionForSessions(sessions: NormalizedSession[], game: GameId): Record<PerformanceBand, number> {
+function distributionForSessions(sessions: NormalizedSession[]): Record<PerformanceBand, number> {
   const distribution: Record<PerformanceBand, number> = { bajo: 0, medio: 0, alto: 0 }
   for (const s of sessions) {
-    const percent = scoreToPercent(game, s.exercise, s.score)
+    const percent = sessionScorePercent(s)
     if (percent === null) continue
     distribution[bandFor(percent)] += 1
   }
@@ -65,7 +65,7 @@ function distributionForSessions(sessions: NormalizedSession[], game: GameId): R
 export function computePerformanceDistribution(sessionsByGame: Record<GameId, NormalizedSession[]>): Record<PerformanceBand, number> {
   const distribution: Record<PerformanceBand, number> = { bajo: 0, medio: 0, alto: 0 }
   for (const game of Object.keys(sessionsByGame) as GameId[]) {
-    const perGame = distributionForSessions(sessionsByGame[game], game)
+    const perGame = distributionForSessions(sessionsByGame[game])
     for (const band of Object.keys(distribution) as PerformanceBand[]) distribution[band] += perGame[band]
   }
   return distribution
@@ -75,7 +75,7 @@ export function computePerformanceDistribution(sessionsByGame: Record<GameId, No
 export function computePerformanceDistributionByGame(sessionsByGame: Record<GameId, NormalizedSession[]>): Record<GameId, Record<PerformanceBand, number>> {
   const result = {} as Record<GameId, Record<PerformanceBand, number>>
   for (const game of Object.keys(sessionsByGame) as GameId[]) {
-    result[game] = distributionForSessions(sessionsByGame[game], game)
+    result[game] = distributionForSessions(sessionsByGame[game])
   }
   return result
 }

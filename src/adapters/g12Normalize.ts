@@ -24,6 +24,14 @@ function entryToSession(game: GameId, uid: string, sourcePath: string, entry: G1
     stars: typeof entry.stars === 'number' ? entry.stars : null,
     durationSeconds: parseDurationToSeconds(entry.timing),
     durationRaw: entry.timing ?? null,
+    // Amazonas y Cartagena no guardan nada de esto
+    isWin: null,
+    timestampUtc: null,
+    scoreModel: null,
+    sessionId: null,
+    attempt: null,
+    device: null,
+    metrics: null,
   }
 }
 

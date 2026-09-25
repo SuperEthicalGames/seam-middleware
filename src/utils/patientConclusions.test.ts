@@ -18,42 +18,60 @@ function session(overrides: Partial<NormalizedSession>): NormalizedSession {
     stars: 3,
     durationSeconds: 60,
     durationRaw: '1:00 seconds',
+    isWin: null,
+    timestampUtc: null,
+    scoreModel: null,
+    sessionId: null,
+    attempt: null,
+    device: null,
+    metrics: null,
     ...overrides,
   }
 }
 
 describe('computePatientConclusions', () => {
-  it('nunca calcula fortaleza/debilidad con menos de 2 ejercicios (no hay base de comparación)', () => {
-    const profile: ConsolidatedProfile = {
-      identifier: '123',
-      results: [{ game: 'game1', state: 'FOUND', user: null, sessions: [session({}), session({})] }],
-    }
-    const c = computePatientConclusions(profile, EMPTY_FILTERS)
-    expect(c.strongest).toBeNull()
-    expect(c.weakest).toBeNull()
-  })
-
-  it('identifica el ejercicio con mejor y peor % relativo, comparando entre juegos distintos', () => {
+  it('resume cada ejercicio contra su propio historial y no ordena ni compara ejercicios entre sí', () => {
     const profile: ConsolidatedProfile = {
       identifier: '123',
       results: [
-        { game: 'game1', state: 'FOUND', user: null, sessions: [session({ exercise: 'exercise1', score: 90 })] }, // 90%
+        { game: 'game1', state: 'FOUND', user: null, sessions: [session({ exercise: 'exercise1', score: 90 })] },
         {
           game: 'game3',
           state: 'FOUND',
           user: null,
-          sessions: [session({ game: 'game3', exercise: 'CoffeeWash', score: 20 })], // 20%
+          // Una victoria mínima de Lavado (100 puntos con el modelo nuevo) nunca debe salir como "el mejor ejercicio"
+          sessions: [session({ game: 'game3', exercise: 'CoffeeWash', score: 100, isWin: true, scoreModel: 2 })],
         },
         { game: 'game2', state: 'NOT_FOUND', user: null, sessions: [] },
       ],
     }
     const c = computePatientConclusions(profile, EMPTY_FILTERS)
-    expect(c.strongest?.exercise).toBe('exercise1')
-    expect(c.strongest?.percent).toBe(90)
-    expect(c.weakest?.exercise).toBe('CoffeeWash')
-    expect(c.weakest?.percent).toBe(20)
+    expect(c).not.toHaveProperty('strongest')
+    expect(c).not.toHaveProperty('weakest')
+    expect(c.exercises.map((e) => e.exercise)).toEqual(['exercise1', 'CoffeeWash'])
     expect(c.gamesFound).toBe(2)
     expect(c.gamesTotal).toBe(3)
+  })
+
+  it('informa la tasa de victorias y el nivel más alto ganado con los resultados que guardó el juego', () => {
+    const profile: ConsolidatedProfile = {
+      identifier: '123',
+      results: [
+        {
+          game: 'game3',
+          state: 'FOUND',
+          user: null,
+          sessions: [
+            session({ game: 'game3', exercise: 'CoffeeCollection', difficulty: 'easy', score: 3000, isWin: true, scoreModel: 2 }),
+            session({ game: 'game3', exercise: 'CoffeeCollection', difficulty: 'medium', score: 2500, isWin: true, scoreModel: 2 }),
+            session({ game: 'game3', exercise: 'CoffeeCollection', difficulty: 'hard', score: 400, isWin: false, scoreModel: 2 }),
+          ],
+        },
+      ],
+    }
+    const [ex] = computePatientConclusions(profile, EMPTY_FILTERS).exercises
+    expect(ex.winRate).toBe(67) // 2 de 3
+    expect(ex.highestLevelWon).toBe('medium')
   })
 
   it('respeta los filtros aplicados al contar sesiones', () => {
@@ -70,6 +88,29 @@ describe('computePatientConclusions', () => {
     }
     const c = computePatientConclusions(profile, { ...EMPTY_FILTERS, difficulty: 'easy' })
     expect(c.totalSessions).toBe(1)
+  })
+
+  it('la tendencia de mejora dice sobre qué nivel se calculó', () => {
+    const profile: ConsolidatedProfile = {
+      identifier: '123',
+      results: [
+        {
+          game: 'game1',
+          state: 'FOUND',
+          user: null,
+          sessions: [
+            session({ difficulty: 'medium', date: '2026-01-01', score: 20 }),
+            session({ difficulty: 'medium', date: '2026-01-02', score: 20 }),
+            session({ difficulty: 'medium', date: '2026-01-03', score: 90 }),
+            session({ difficulty: 'medium', date: '2026-01-04', score: 90 }),
+          ],
+        },
+      ],
+    }
+    const c = computePatientConclusions(profile, EMPTY_FILTERS)
+    expect(c.improving).toHaveLength(1)
+    expect(c.improving[0].level).toBe('medium')
+    expect(formatConclusionsText(c).join(' ')).toContain('nivel Medio')
   })
 
   it('formatConclusionsText nunca incluye lenguaje clínico o de diagnóstico', () => {

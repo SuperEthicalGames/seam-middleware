@@ -44,6 +44,34 @@ export interface G3ResultEntry {
   experience?: string // 'CoffeeWash' | 'CoffeeClassification' | ...
   score?: number
   time?: string // 'M:SS seconds', opcional — NO se llama 'timing' como en G1/G2
+
+  // Campos que la app de Cafetero guarda desde su versión 1.2.x — ausentes en partidas anteriores.
+  // Ver firebase/README.md del repositorio del juego para el significado de cada uno.
+  timeSeconds?: number // duración exacta del intento, en segundos (`time` la redondea a segundos enteros)
+  isWin?: boolean
+  timestampUtc?: string // reloj del visor al terminar el intento, ISO 8601
+  appVersion?: string
+  recordId?: string
+
+  // Desde `scoreModel: 2`
+  scoreModel?: number
+  sessionId?: string
+  attempt?: number
+  device?: string
+  serverTimestamp?: number // ms desde epoch, hora del servidor al llegar el resultado
+  errors?: number
+  leftCount?: number
+  rightCount?: number
+  wrongArm?: number
+  outOfOrder?: number
+  reTouch?: number
+  errRed?: number
+  errYellow?: number
+  errGreen?: number
+  stepsDone?: number
+  drops?: number
+  offPathSeconds?: number
+  firstActionSeconds?: number
 }
 
 export interface G3User {
@@ -79,6 +107,34 @@ export interface NormalizedUser {
   lastActivityDate: string | null // ISO 'YYYY-MM-DD' de la sesión más reciente, null si no hay ninguna
 }
 
+/**
+ * Lo que la app midió durante un intento además del puntaje. Cada minijuego mide solo una parte:
+ * un campo en null significa "este minijuego no lo mide", no "cero" — cero es "se midió y no ocurrió".
+ */
+export interface SessionMetrics {
+  /** Errores del minijuego (qué cuenta como uno depende del minijuego, ver firebase/README.md del juego). */
+  errors: number | null
+  /** Acciones correctas hechas con cada brazo. */
+  leftCount: number | null
+  rightCount: number | null
+  /** Lavado: tipo de falta. `reTouch` resta puntaje pero no cuenta como error. */
+  wrongArm: number | null
+  outOfOrder: number | null
+  reTouch: number | null
+  /** Clasificación: color del grano puesto en la jarra equivocada. */
+  errRed: number | null
+  errYellow: number | null
+  errGreen: number | null
+  /** Elaboración: pasos de la receta completados (0 a 4). */
+  stepsDone: number | null
+  /** Objetos que se cayeron fuera de alcance y se devolvieron a su sitio. */
+  drops: number | null
+  /** Transporte: segundos fuera del camino. */
+  offPathSeconds: number | null
+  /** Segundos desde el inicio del intento hasta la primera acción útil. */
+  firstActionSeconds: number | null
+}
+
 export interface NormalizedSession {
   game: GameId
   uid: string
@@ -93,6 +149,18 @@ export interface NormalizedSession {
   stars: number | null // null si el juego no tiene el concepto (Game 3)
   durationSeconds: number | null
   durationRaw: string | null
+  /** Resultado que el juego guardó. null en partidas anteriores a que lo guardara y en Amazonas/Cartagena — nunca se deduce aquí (ver `sessionResult`). */
+  isWin: boolean | null
+  /** Reloj del visor al terminar el intento (ISO 8601), preciso al milisegundo. null en partidas anteriores. */
+  timestampUtc: string | null
+  /** Versión del significado del puntaje. null = partida anterior a sept-2026 (en Lavado, toda victoria valía 100). */
+  scoreModel: number | null
+  /** Sesión (desde que el usuario entra hasta que sale) y número del intento de ese ejercicio y nivel dentro de ella. */
+  sessionId: string | null
+  attempt: number | null
+  device: string | null
+  /** null si el juego no guardó ninguna métrica del intento. */
+  metrics: SessionMetrics | null
 }
 
 export interface NormalizedSerial {

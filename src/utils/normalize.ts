@@ -69,7 +69,9 @@ export function formatDateEs(iso: string | null): string {
 
 export function formatDurationEs(seconds: number | null): string {
   if (seconds === null) return 'No disponible'
-  const m = Math.floor(seconds / 60)
-  const s = seconds % 60
+  // Las partidas recientes traen decimales (`timeSeconds`); en pantalla siempre segundos enteros
+  const total = Math.round(seconds)
+  const m = Math.floor(total / 60)
+  const s = total % 60
   return `${m}:${s.toString().padStart(2, '0')} min`
 }

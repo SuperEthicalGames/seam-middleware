@@ -16,6 +16,13 @@ export function makeSession(overrides: Partial<NormalizedSession> = {}): Normali
     stars: null,
     durationSeconds: null,
     durationRaw: null,
+    isWin: null,
+    timestampUtc: null,
+    scoreModel: null,
+    sessionId: null,
+    attempt: null,
+    device: null,
+    metrics: null,
     ...overrides,
   }
 }
