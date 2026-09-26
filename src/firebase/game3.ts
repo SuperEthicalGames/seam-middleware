@@ -3,15 +3,25 @@ import { getDatabase } from 'firebase/database'
 import { createAnonAuthGate } from './anonAuthGate'
 
 /**
- * Firebase del Juego 3 — Cafetero (seam-data-game). Ver nota en game1.ts: mismo
- * motivo para inicializar solo con databaseURL hasta ahora, y mismo plan de cierre de
- * Rules (LIMITATIONS.md sección 1) — reemplazar la config de abajo con los valores
- * reales de este proyecto activa la sesión anónima automáticamente, sin más cambios.
+ * Firebase del Juego 3 — Cafetero (seam-data-game). Config real tomada del
+ * google-services.json de la app de Unity (Assets/google-services.json,
+ * package com.AgencyCIC.ExperienciaEjeCafetero, 2026-09-21).
+ *
+ * Las Rules de este proyecto ya se publicaron con `auth != null` en `identificators`,
+ * `serials` y `users` (verificado en vivo: las tres rutas devuelven 401 sin sesión) —
+ * de ahí que el portal dejara de ver datos. El juego de Unity no se ve afectado: solo
+ * toca `users`, y siempre después de un login real (cédula + contraseña derivada,
+ * `AuthenticationManager.cs`); nunca toca `identificators` ni `serials`.
+ *
+ * `authDomain` sigue la convención estándar de Firebase (`{projectId}.firebaseapp.com`)
+ * — no se confirmó contra la Console, pero `signInAnonymously` no depende de él (solo
+ * lo usan los flujos de redirección OAuth, que esto no usa), así que un valor
+ * incorrecto aquí no debería romper el inicio de sesión anónimo.
  */
 const GAME3_FIREBASE_CONFIG = {
-  apiKey: 'PENDIENTE_apiKey_real_de_seam-data-game',
-  authDomain: 'PENDIENTE_authDomain_real_de_seam-data-game',
-  projectId: 'PENDIENTE_projectId_real_de_seam-data-game',
+  apiKey: 'AIzaSyBFQl_PhuF_TAwhRXKti65YUdEVkGtyYPA',
+  authDomain: 'seam-data-game.firebaseapp.com',
+  projectId: 'seam-data-game',
   databaseURL: 'https://seam-data-game-default-rtdb.firebaseio.com',
 }
 
