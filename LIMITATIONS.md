@@ -180,3 +180,13 @@ Auditoría del análisis de rendimiento contra las fórmulas reales del juego (`
 - El cambio sin commitear en `src/firebase/game3.ts` activa `signInAnonymously` contra `seam-data-game`: si el proveedor Anónimo no está habilitado en ese proyecto, Cafetero mostrará error en el portal aunque las reglas estén abiertas.
 - Dashboard y Directorio siguen descargando todos los usuarios con todo su historial en cada carga. Aceptable con decenas de usuarios, no con cientos.
 - `bundleVersion` de la app sigue en 1.2.3: `appVersion` no distingue compilaciones. `scoreModel` sí distingue el significado del puntaje.
+
+## 13. Acceso por serial de equipo en el Juego 3 (2026-09-30)
+Cada visor del Juego 3 registra su serial solo: `identificators/gameNN = serial` y `serials/{serial} = false` (un visor nuevo nace **sin acceso**). Desde **Seriales** el administrador pasa el valor a `true`/`false`; el portal muestra el `gameNN` del equipo en la columna "Equipo". Los datos anteriores (1/0 y claves hash) se siguen mostrando y al cambiarlos se conserva su tipo numérico; la auditoría guarda siempre 1/0.
+
+Cambios de seguridad que esto trae, y que hay que hacer **en este orden** (detalle en `firebase/README.md` del repositorio del juego):
+1. Habilitar inicio de sesión **Anónimo** en Authentication de `seam-data-game` (lo usan los visores para registrarse).
+2. El portal ya **no entra como anónimo** a `seam-data-game`: inicia sesión con el mismo correo y contraseña del administrador (`AuthContext.signIn` → `signInGame3Admin`). Cada administrador necesita una cuenta con ese correo y contraseña en Authentication de `seam-data-game` y el nodo `admins/{uid} = true`. Las contraseñas de las dos bases no se sincronizan: si un administrador cambia la suya en el portal, debe cambiarla también allí. Si la cuenta no existe, el portal sigue funcionando y solo el Juego 3 avisa que falta la sesión.
+3. `game-database-rules/cafetero.rules.json` es ahora una copia de `firebase/database.rules.json` del repositorio del juego (un solo conjunto de reglas en lugar de dos que se contradecían). Publicarlas solo cuando el portal nuevo y la app nueva ya estén desplegados: el portal anterior, que entraba como anónimo, dejaría de leer datos.
+
+No probado: las reglas no se pudieron ejecutar contra el emulador (no hay Java en el equipo de desarrollo) ni se publicaron; solo se probó la lógica del portal (180 pruebas, tsc y eslint limpios). Limitación: el serial lo declara el visor, así que quien conozca el de un equipo activo podría presentarlo desde otro con la app modificada.

@@ -89,7 +89,8 @@ export type RawGameUser = G12User | G3User
 // Identificators / Serials — mismo patrón conceptual en los 3 juegos
 // ---------------------------------------------------------------------------
 
-export type RawSerialValue = 0 | 1
+/** El Juego 3 guarda true/false (acceso por serial de equipo); los juegos 1 y 2, y los datos antiguos, usan 1/0. */
+export type RawSerialValue = 0 | 1 | boolean
 
 // ---------------------------------------------------------------------------
 // Modelo normalizado — lo único que la UI debe conocer
@@ -168,6 +169,8 @@ export interface NormalizedSerial {
   code: string
   active: boolean
   rawValue: RawSerialValue
+  /** Clave del registro en `identificators` (game00, game01...) cuando el equipo se registró solo, p. ej. en el Juego 3. */
+  label?: string
 }
 
 export interface GameLookupResult {

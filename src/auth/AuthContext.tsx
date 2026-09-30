@@ -8,6 +8,7 @@ import {
   type User,
 } from 'firebase/auth'
 import { centralAuth } from '@/firebase/central'
+import { signInGame3Admin, signOutGame3 } from '@/firebase/game3'
 import { clearMustChangePassword, ensureAdminProfile } from '@/services/AdminService'
 import type { AdminProfile } from '@/types/central'
 import { toFriendlyMessage } from '@/utils/errors'
@@ -58,8 +59,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         } catch (error) {
           throw new Error(toFriendlyMessage(error))
         }
+        // El Juego 3 exige un administrador real en su propia base (no hay sesión anónima): se entra con las mismas credenciales.
+        // Si esa cuenta no existe allí el portal sigue funcionando; solo el Juego 3 mostrará el aviso correspondiente.
+        try {
+          await signInGame3Admin(email, password)
+        } catch (error) {
+          console.warn('No se pudo iniciar sesión en la base del Juego 3:', error)
+        }
       },
       async signOut() {
+        await signOutGame3().catch(() => {})
         await firebaseSignOut(centralAuth)
       },
       async resetPassword(email) {

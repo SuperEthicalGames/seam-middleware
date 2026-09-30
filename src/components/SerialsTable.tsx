@@ -54,6 +54,7 @@ export function SerialsTable({ serials, loading, error, onRetry, onChanged, show
   }
 
   const columns: Column<NormalizedSerial>[] = [
+    { key: 'label', header: 'Equipo', render: (s) => (s.label ? <span className="font-mono text-xs">{s.label}</span> : <span className="text-gray-400">—</span>), sortValue: (s) => s.label ?? '' },
     { key: 'code', header: 'Serial', render: (s) => <span className="font-mono text-xs">{s.code}</span>, sortValue: (s) => s.code },
     ...(showGameColumn
       ? [{ key: 'game', header: 'Juego', render: (s: NormalizedSerial) => GAME_CATALOG[s.game].displayName, sortValue: (s: NormalizedSerial) => s.game } as Column<NormalizedSerial>]

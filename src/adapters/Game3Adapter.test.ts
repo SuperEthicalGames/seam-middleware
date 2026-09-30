@@ -52,6 +52,29 @@ describe('Game3Adapter', () => {
     })
   })
 
+  describe('getSerials', () => {
+    it('une cada serial con su etiqueta gameNN de identificators y acepta true/false y 1/0', async () => {
+      mockedGet
+        .mockResolvedValueOnce(makeSnapshot({ AAAA1111BBBB2222: false, CCCC3333DDDD4444: true, legacyhash: 1 }))
+        .mockResolvedValueOnce(makeSnapshot({ game00: 'AAAA1111BBBB2222', game01: 'CCCC3333DDDD4444' }))
+
+      const serials = await adapter.getSerials()
+
+      expect(serials).toEqual([
+        { game: 'game3', code: 'AAAA1111BBBB2222', active: false, rawValue: false, label: 'game00' },
+        { game: 'game3', code: 'CCCC3333DDDD4444', active: true, rawValue: true, label: 'game01' },
+        { game: 'game3', code: 'legacyhash', active: true, rawValue: 1, label: undefined },
+      ])
+    })
+
+    it('sin identificators devuelve los seriales sin etiqueta', async () => {
+      mockedGet.mockResolvedValueOnce(makeSnapshot({ AAAA1111BBBB2222: false })).mockResolvedValueOnce(makeSnapshot(null))
+      const serials = await adapter.getSerials()
+      expect(serials).toHaveLength(1)
+      expect(serials[0].label).toBeUndefined()
+    })
+  })
+
   describe('setSerialStatus', () => {
     it('lanza PortalError si el serial no existe', async () => {
       mockedGet.mockResolvedValueOnce(makeSnapshot(null))
@@ -67,6 +90,16 @@ describe('Game3Adapter', () => {
 
       expect(result).toEqual({ code: 'serialX', previousValue: 0, newValue: 1 })
       expect(mockedUpdate).toHaveBeenCalledWith(expect.anything(), { 'serials/serialX': 1 })
+    })
+
+    it('escribe true/false cuando el equipo se registró solo, y deja 1/0 en la auditoría', async () => {
+      mockedGet.mockResolvedValueOnce(makeSnapshot(false))
+      mockedUpdate.mockResolvedValueOnce(undefined)
+
+      const result = await adapter.setSerialStatus('AAAA1111BBBB2222', true)
+
+      expect(mockedUpdate).toHaveBeenCalledWith(expect.anything(), { 'serials/AAAA1111BBBB2222': true })
+      expect(result).toEqual({ code: 'AAAA1111BBBB2222', previousValue: 0, newValue: 1 })
     })
   })
 })
