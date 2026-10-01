@@ -2,7 +2,7 @@ import { initializeApp } from 'firebase/app'
 import { getDatabase } from 'firebase/database'
 import { createAnonAuthGate } from './anonAuthGate'
 import { createGameLink } from './gameLink'
-import { GAME_REQUIRES_ADMIN } from '@/config/games'
+import { GAME_BOOTSTRAP_OWNER_EMAIL, GAME_MANAGES_ADMINS, GAME_REQUIRES_ADMIN } from '@/config/games'
 
 /**
  * Firebase del Juego 1 — Amazonas (seam-data-as). Sistema EXISTENTE de la app de
@@ -20,9 +20,9 @@ import { GAME_REQUIRES_ADMIN } from '@/config/games'
  * Rules que exijan `auth != null`.
  */
 export const GAME1_FIREBASE_CONFIG = {
-  apiKey: 'PENDIENTE_apiKey_real_de_seam-data-as',
-  authDomain: 'PENDIENTE_authDomain_real_de_seam-data-as',
-  projectId: 'PENDIENTE_projectId_real_de_seam-data-as',
+  apiKey: 'AIzaSyC2IgpbUMp-sIwIqbkAunK_M1VCCKioaas',
+  authDomain: 'seam-data-as.firebaseapp.com',
+  projectId: 'seam-data-as',
   databaseURL: 'https://seam-data-as-default-rtdb.firebaseio.com',
 }
 
@@ -30,7 +30,9 @@ const HAS_REAL_CONFIG = !GAME1_FIREBASE_CONFIG.apiKey.startsWith('PENDIENTE_')
 
 export const game1App = initializeApp(GAME1_FIREBASE_CONFIG, 'game1')
 export const game1Db = getDatabase(game1App)
-export const ensureGame1Auth = createAnonAuthGate(game1App, HAS_REAL_CONFIG)
+// Sin sesión anónima: las Rules de este juego siguen abiertas y leerlo no necesita sesión. Que ya haya configuración real (para crear las cuentas
+// de administrador) no debe cambiar cómo se lee. Cuando se cierren sus Rules, el enlace de administrador (GAME_REQUIRES_ADMIN) pone la sesión.
+export const ensureGame1Auth = createAnonAuthGate(game1App, false)
 
 /**
  * Enlace de administrador de Amazonas. `requiresAdmin` sigue en false (`GAME_REQUIRES_ADMIN`): mientras las Rules de este proyecto sean las actuales (`auth != null`)
@@ -45,4 +47,6 @@ export const game1Link = createGameLink({
   firebaseConfig: GAME1_FIREBASE_CONFIG,
   hasRealConfig: HAS_REAL_CONFIG,
   requiresAdmin: GAME_REQUIRES_ADMIN.game1,
+  manageAdmins: GAME_MANAGES_ADMINS.game1,
+  bootstrapOwnerEmail: GAME_BOOTSTRAP_OWNER_EMAIL,
 })

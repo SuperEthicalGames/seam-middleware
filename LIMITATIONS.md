@@ -192,30 +192,31 @@ La reparación (rama `analisis-por-nivel-y-resultado`):
 - Si algo falta, un aviso en pantalla (`Game3Banner`) dice **qué** falta (sin sesión, la cuenta no existe, la cuenta no está en `admins` con su UID, sin red...) y deja reconectar escribiendo la contraseña, sin cerrar sesión. Las páginas que consultan Cafetero muestran ese mismo motivo en vez del error genérico.
 - Se probó el adaptador contra las Rules reales en el emulador (`npm run test:rules`): como administrador lista usuarios y seriales y activa/desactiva; como anónimo o sin sesión las Rules rechazan todo.
 
-### Administradores de los juegos: un solo mecanismo para los tres
-Cada juego es un proyecto de Firebase aparte, con sus propias cuentas. Para no repetir pasos manuales por cada persona y cada juego, las Rules de los tres (`game-database-rules/*.rules.json`, misma capa en los tres, con una prueba que lo verifica) tienen:
-- `owners/{uid}`: los **propietarios** del juego. Solo se escribe en la consola de Firebase. Es lo único manual: **una vez por juego**.
-- `admins/{uid} = true`: los administradores que pueden leer ese juego desde el portal. Solo los propietarios del juego lo escriben.
+### Administradores de los juegos: un solo mecanismo para los tres, sin pasos manuales
+Cada juego es un proyecto de Firebase aparte, con sus propias cuentas. Una cuenta del portal es también una cuenta en **Amazonas, Cartagena y Cafetero** (`GAME_MANAGES_ADMINS`, `src/config/games.ts`), y nadie escribe nada en la consola. Las Rules de los tres (`game-database-rules/*.rules.json`, misma capa en los tres, con una prueba que lo verifica) tienen:
+- `owners/{uid}`: los **propietarios** del juego. Los hace propietarios, sin consola, otro propietario o el **correo raíz** (abajo).
+- `admins/{uid} = true`: los administradores que pueden leer ese juego desde el portal. Solo los propietarios lo escriben.
 - `adminRequests/{uid}`: solicitudes de acceso. Cualquier cuenta con correo puede crear la suya (con su propio correo, una sola vez); solo los propietarios las listan y resuelven.
 
-Qué hace el portal con esa capa (el mismo código para Amazonas, Cartagena y Cafetero; `GAME_REQUIRES_ADMIN` en `src/config/games.ts` decide qué juegos ya la exigen: hoy solo Cafetero):
-1. **Iniciar sesión:** el portal conecta cada juego con el mismo correo y contraseña del administrador y muestra un aviso por juego si algo falta, con el botón para resolverlo.
-2. **Crear un administrador** (Administradores, propietario del portal): crea su cuenta del portal y, con la misma contraseña temporal, su cuenta en cada juego que exige administradores, y la da de alta en `admins` (para eso quien crea debe ser propietario de ese juego). El resultado por juego se muestra al crear.
-3. **Solicitar acceso:** quien no figura en un juego (por ejemplo, un administrador que ya existía) pulsa "Crear cuenta y solicitar acceso" / "Solicitar acceso" en el aviso. Un propietario del juego lo aprueba o rechaza en Administradores > "Solicitudes de acceso a los juegos". No hay que copiar UID ni tocar la consola.
-4. **Revocar:** quita el acceso del portal y también `admins/{uid}` en cada juego (se guardan los UID de cada juego en el perfil del portal).
-5. **Cambiar la contraseña:** se cambia también en la base de cada juego donde hay sesión abierta. Si alguna no se pudo, el portal lo dice y pide "Conectar" una vez.
+**El primer propietario sale solo.** Las Rules reconocen un único correo raíz (`GAME_BOOTSTRAP_OWNER_EMAIL`, hoy `superethicalgames@gmail.com`, el del propietario del portal): su cuenta puede escribir su propio `owners/{uid}` **solo si Firebase confirmó que el correo es suyo** (`email_verified`). Sin esa confirmación cualquiera podría registrar ese correo en el juego antes que su dueño y quedarse con él, por eso hay un único paso que ninguna automatización puede saltarse: abrir el enlace del correo de confirmación que Firebase envía. Todo lo demás es automático: al iniciar sesión en el portal con el correo raíz se crea su cuenta en cada juego, se envía la confirmación, y al volver y pulsar "Comprobar de nuevo" queda propietario y administrador. Si el correo raíz cambia hay que cambiarlo en `src/config/games.ts` y en los tres archivos de Rules (una prueba lo verifica) y publicarlas de nuevo.
 
-#### Primer propietario de un juego (una sola vez por juego, en la consola de `seam-data-game` o del juego que sea)
-1. En el portal, con la cuenta que será propietaria, pulsar "Crear cuenta y solicitar acceso" en el aviso del juego (crea la cuenta del juego con la misma contraseña del portal y muestra su UID). Si prefiere hacerlo a mano: *Authentication > Add user* con el mismo correo y contraseña.
-2. En *Realtime Database* del juego crear `owners/{UID} = true` y `admins/{UID} = true` (los dos, booleanos).
-3. Recargar el portal: el aviso desaparece. Desde ahí el resto de administradores se crean y aprueban desde el portal.
+Qué hace el portal con esa capa (el mismo código para los tres juegos):
+1. **Iniciar sesión:** cada administrador del portal recibe su cuenta en las tres bases, con la misma contraseña, y queda su solicitud de acceso para que un propietario la apruebe (el correo raíz no la necesita). Un aviso por juego dice qué falta cuando algo falla.
+2. **Crear un administrador** (Administradores, propietario del portal): crea su cuenta del portal y, con la misma contraseña temporal, su cuenta en las tres bases y la da de alta en `admins` (para eso quien crea debe ser propietario de ese juego). El resultado por juego se muestra al crear.
+3. **Aprobar:** Administradores > "Solicitudes de acceso a los juegos", por juego. No hay que copiar UID ni tocar la consola.
+4. **Rol de dueño:** hacer o quitar dueño a alguien en el portal lo cambia también en los juegos.
+5. **Revocar:** quita el acceso del portal y `admins/{uid}` en cada juego (los UID de cada juego se guardan en el perfil del portal).
+6. **Cambiar la contraseña:** se cambia también en las tres bases donde hay sesión. Si alguna falla, el portal lo dice; "Restablecer contraseña de <juego>" resuelve el caso de quien restableció la del portal.
+7. **Sincronizar con los juegos** (botón en Administradores): completa las altas que quedaron pendientes y repara diferencias. Es idempotente.
 
-#### Activar Amazonas y Cartagena (cuando sus aplicaciones ya inicien sesión)
-1. Poner la configuración real de Firebase de cada proyecto en `src/firebase/game1.ts` / `game2.ts` (hoy son valores de relleno `PENDIENTE_`).
-2. Publicar su archivo de Rules (`game-database-rules/amazonas.rules.json` / `cartagena.rules.json`) siguiendo el orden de `game-database-rules/README.md`. Esos archivos son el objetivo: hoy dejan `auth != null` en `users`, `serials` e `identificators` como estaban, más la capa de administradores; endurecerlos exige conocer cómo escribe cada aplicación.
-3. Crear su primer propietario (pasos de arriba) y cambiar `GAME_REQUIRES_ADMIN.game1` / `game2` a `true`.
+**Leer cada juego es otra cosa** (`GAME_REQUIRES_ADMIN`): solo Cafetero exige hoy una sesión de administrador para leer. Amazonas y Cartagena se siguen leyendo como hasta ahora, porque sus Rules aún no tienen la capa; sus cuentas de administrador se crean igual, y el alta en `admins` de cada persona se completa con "Sincronizar con los juegos" cuando se publiquen. De esos juegos el aviso del portal solo muestra la confirmación del correo raíz.
 
-Límites: crear una cuenta de Firebase Auth no se puede deshacer desde el portal (sin Admin SDK): revocar quita el acceso pero la cuenta del juego queda sin permisos. Cualquiera con la clave pública del proyecto puede crear cuentas y pedir acceso, así que la lista de solicitudes puede tener basura que se rechaza. Los propietarios de un juego solo se crean en la consola.
+#### Para activar la lectura cerrada en Amazonas y Cartagena (cuando sus aplicaciones ya inicien sesión)
+1. Publicar su archivo de Rules (`game-database-rules/amazonas.rules.json` / `cartagena.rules.json`) siguiendo el orden de `game-database-rules/README.md`. Hoy dejan `auth != null` en `users`, `serials` e `identificators` como estaban, más la capa de administradores; endurecerlos exige conocer cómo escribe cada aplicación.
+2. Abrir el portal con el correo raíz, confirmar el correo si lo pide y pulsar "Sincronizar con los juegos".
+3. Cambiar `GAME_REQUIRES_ADMIN.game1` / `game2` a `true`.
+
+Límites: crear una cuenta de Firebase Auth no se puede deshacer desde el portal (sin Admin SDK): revocar quita el acceso pero la cuenta del juego queda sin permisos. Cualquiera con la clave pública del proyecto puede crear cuentas y pedir acceso, así que la lista de solicitudes puede tener basura que se rechaza. La configuración de Firebase de los tres juegos sale de los `google-services.json` de sus proyectos de Unity (la clave de la API es pública por diseño).
 
 Además, para el control de acceso por serial: habilitar el inicio de sesión **Anónimo** en `seam-data-game` (ya está habilitado) y publicar `game-database-rules/cafetero.rules.json` (copia de `firebase/database.rules.json` del repositorio del juego).
 

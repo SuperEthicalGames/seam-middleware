@@ -67,6 +67,65 @@ export async function revokeAdminInGames(gameUids: GameUids | undefined, links: 
   return outcomes
 }
 
+/** Hace propietaria (o quita el rol de propietaria) a la persona en cada juego donde se conoce su UID. Un fallo en un juego no detiene a los demás */
+export async function setOwnerInGames(gameUids: GameUids | undefined, enabled: boolean, links: GameLinks = GAME_LINKS): Promise<RevokeOutcome[]> {
+  const outcomes: RevokeOutcome[] = []
+  for (const link of adminGameLinks(links)) {
+    const uid = gameUids?.[link.gameId]
+    if (!uid) {
+      outcomes.push({ game: link.gameId, displayName: link.displayName, ok: false, message: `${link.displayName}: no se conoce la cuenta de esta persona en ese juego; apruebe su acceso primero.` })
+      continue
+    }
+    try {
+      await link.setOwner(uid, enabled)
+      outcomes.push({ game: link.gameId, displayName: link.displayName, ok: true })
+    } catch {
+      outcomes.push({ game: link.gameId, displayName: link.displayName, ok: false, message: `${link.displayName}: no se pudo cambiar el rol (¿su cuenta es propietaria de ese juego?).` })
+    }
+  }
+  return outcomes
+}
+
+export interface SyncOutcome {
+  game: GameId
+  displayName: string
+  synced: number
+  failed: number
+  missing: number
+  message?: string
+}
+
+/**
+ * Da de alta en `admins` (y de propietario, si lo son) a las personas del portal cuya cuenta del juego ya existe. Sirve para completar lo que quedó
+ * pendiente porque las Rules de un juego todavía no tenían la capa de administradores, o para reparar una diferencia. Es idempotente.
+ */
+export async function syncAdminsToGames(profiles: AdminProfile[], links: GameLinks = GAME_LINKS): Promise<SyncOutcome[]> {
+  const outcomes: SyncOutcome[] = []
+  for (const link of adminGameLinks(links)) {
+    const outcome: SyncOutcome = { game: link.gameId, displayName: link.displayName, synced: 0, failed: 0, missing: 0 }
+    for (const profile of profiles) {
+      const uid = profile.gameUids?.[link.gameId]
+      if (!uid) {
+        outcome.missing++
+        continue
+      }
+      try {
+        await link.setAdmin(uid, true)
+        if (profile.role === 'owner') await link.setOwner(uid, true)
+        outcome.synced++
+      } catch {
+        outcome.failed++
+      }
+    }
+    const notes: string[] = []
+    if (outcome.failed > 0) notes.push(`${outcome.failed} sin sincronizar (las Rules de ${link.displayName} aún no tienen la capa de administradores, o su cuenta no es propietaria)`)
+    if (outcome.missing > 0) notes.push(`${outcome.missing} todavía no tienen cuenta en ${link.displayName}: se crea cuando inicien sesión en el portal`)
+    if (notes.length > 0) outcome.message = `${link.displayName}: ${notes.join('; ')}.`
+    outcomes.push(outcome)
+  }
+  return outcomes
+}
+
 export interface AccessRequestItem extends AdminRequest {
   game: GameId
   displayName: string

@@ -3,7 +3,7 @@ import { get, remove, set, update } from 'firebase/database'
 import { ensureAdminProfile, getAllAdmins, createNewAdmin, revokeAdmin, clearMustChangePassword, changeAdminRole } from './AdminService'
 import { createAdminAuthAccount } from '@/firebase/adminCreation'
 import { tryRecordAuditEntry } from './AuditService'
-import { provisionAdminInGames, revokeAdminInGames } from './GameAdminService'
+import { provisionAdminInGames, revokeAdminInGames, setOwnerInGames } from './GameAdminService'
 import { makeSnapshot } from '@/test/firebaseTestUtils'
 import type { User } from 'firebase/auth'
 import type { AdminProfile } from '@/types/central'
@@ -21,6 +21,7 @@ vi.mock('./AuditService', () => ({ tryRecordAuditEntry: vi.fn() }))
 vi.mock('./GameAdminService', () => ({
   provisionAdminInGames: vi.fn(),
   revokeAdminInGames: vi.fn(),
+  setOwnerInGames: vi.fn(),
 }))
 
 const mockedGet = vi.mocked(get)
@@ -31,6 +32,7 @@ const mockedCreateAuthAccount = vi.mocked(createAdminAuthAccount)
 const mockedTryRecordAudit = vi.mocked(tryRecordAuditEntry)
 const mockedProvisionInGames = vi.mocked(provisionAdminInGames)
 const mockedRevokeInGames = vi.mocked(revokeAdminInGames)
+const mockedSetOwnerInGames = vi.mocked(setOwnerInGames)
 
 function fakeUser(overrides: Partial<User> = {}): User {
   return { uid: 'uid1', email: 'admin@seam.test', displayName: null, ...overrides } as User
@@ -175,6 +177,7 @@ describe('clearMustChangePassword', () => {
 describe('changeAdminRole', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockedSetOwnerInGames.mockResolvedValue([])
   })
 
   it('escribe el nuevo rol en el nodo del destino y audita admin_role_changed con el antes/después', async () => {
@@ -239,5 +242,39 @@ describe('revokeAdmin', () => {
     expect(order[0]).toBe('juegos')
     expect(order).toContain('perfil')
     expect(result.games).toEqual([{ game: 'game3', displayName: 'Cafetero', ok: true }])
+  })
+})
+
+describe('changeAdminRole en los juegos', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockedUpdate.mockResolvedValue(undefined)
+    mockedTryRecordAudit.mockResolvedValue({ auditLogged: true })
+  })
+
+  const base = { targetUid: 'u1', targetEmail: 'ana@seam.test', changedByUid: 'o', changedByEmail: 'o@seam.test' }
+
+  it('al hacer dueña a una persona también la hace propietaria de cada juego donde se conoce su cuenta', async () => {
+    mockedSetOwnerInGames.mockResolvedValueOnce([{ game: 'game3', displayName: 'Cafetero', ok: true }])
+
+    const result = await changeAdminRole({ ...base, previousRole: 'admin', newRole: 'owner', gameUids: { game3: 'cafeteroUid' } })
+
+    expect(mockedSetOwnerInGames).toHaveBeenCalledWith({ game3: 'cafeteroUid' }, true)
+    expect(mockedUpdate).toHaveBeenCalledWith(expect.anything(), { role: 'owner' })
+    expect(result.games).toEqual([{ game: 'game3', displayName: 'Cafetero', ok: true }])
+  })
+
+  it('al quitarle el rol de dueña se lo quita también en los juegos', async () => {
+    await changeAdminRole({ ...base, previousRole: 'owner', newRole: 'admin', gameUids: { game3: 'cafeteroUid' } })
+    expect(mockedSetOwnerInGames).toHaveBeenCalledWith({ game3: 'cafeteroUid' }, false)
+  })
+
+  it('si un juego falla, el cambio de rol del portal se aplica igual y el fallo se devuelve', async () => {
+    mockedSetOwnerInGames.mockResolvedValueOnce([{ game: 'game3', displayName: 'Cafetero', ok: false, message: 'Cafetero: no se pudo cambiar el rol' }])
+
+    const result = await changeAdminRole({ ...base, previousRole: 'admin', newRole: 'owner' })
+
+    expect(mockedUpdate).toHaveBeenCalled()
+    expect(result.games[0].ok).toBe(false)
   })
 })

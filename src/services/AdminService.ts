@@ -4,7 +4,7 @@ import { centralDb } from '@/firebase/central'
 import { createAdminAuthAccount } from '@/firebase/adminCreation'
 import { generateTemporaryPassword } from '@/utils/tempPassword'
 import { tryRecordAuditEntry, type AuditResult } from './AuditService'
-import { provisionAdminInGames, revokeAdminInGames, type ProvisionOutcome, type RevokeOutcome } from './GameAdminService'
+import { provisionAdminInGames, revokeAdminInGames, setOwnerInGames, type ProvisionOutcome, type RevokeOutcome } from './GameAdminService'
 import type { AdminProfile, AdminRole, GameUids } from '@/types/central'
 
 /**
@@ -95,6 +95,8 @@ export async function clearMustChangePassword(uid: string): Promise<void> {
 export interface ChangeAdminRoleParams {
   targetUid: string
   targetEmail: string
+  /** UID de la persona en la base de cada juego, si se conoce: el rol de propietario también se cambia allí */
+  gameUids?: GameUids
   previousRole: AdminRole
   newRole: AdminRole
   changedByUid: string
@@ -107,9 +109,11 @@ export interface ChangeAdminRoleParams {
  * esto. Las Rules tampoco impiden dejar el portal sin ningún 'owner'; esa protección (no
  * degradar al último owner, no cambiarse el rol a uno mismo) vive en la UI, en Admins.tsx.
  */
-export async function changeAdminRole(params: ChangeAdminRoleParams): Promise<AuditResult> {
+export async function changeAdminRole(params: ChangeAdminRoleParams): Promise<AuditResult & { games: RevokeOutcome[] }> {
+  // El rol de propietario del portal es también el de propietario de cada juego (quien puede dar de alta administradores allí)
+  const games = await setOwnerInGames(params.gameUids, params.newRole === 'owner')
   await update(ref(centralDb, `admins/${params.targetUid}`), { role: params.newRole })
-  return tryRecordAuditEntry({
+  const audit = await tryRecordAuditEntry({
     adminUid: params.changedByUid,
     adminEmail: params.changedByEmail,
     action: 'admin_role_changed',
@@ -117,6 +121,7 @@ export async function changeAdminRole(params: ChangeAdminRoleParams): Promise<Au
     previousValue: params.previousRole,
     newValue: params.newRole,
   })
+  return { ...audit, games }
 }
 
 export interface RevokeAdminParams {

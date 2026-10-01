@@ -1,9 +1,19 @@
 import { deleteApp, initializeApp, type FirebaseApp, type FirebaseOptions } from 'firebase/app'
-import { createUserWithEmailAndPassword, getAuth, sendPasswordResetEmail, signInWithEmailAndPassword, signOut, updatePassword, type Auth } from 'firebase/auth'
+import {
+  createUserWithEmailAndPassword,
+  getAuth,
+  sendEmailVerification,
+  sendPasswordResetEmail,
+  signInWithEmailAndPassword,
+  signOut,
+  updatePassword,
+  type Auth,
+  type User,
+} from 'firebase/auth'
 import { get, ref, remove, set, type Database } from 'firebase/database'
 import type { GameId } from '@/types/game'
 import { PortalError } from '@/utils/errors'
-import { checkingState, classifyGameLink, describeSignInError, errorState, noSessionState, passwordMismatchState, type GameLinkState } from './gameLinkState'
+import { checkingState, classifyGameLink, describeSignInError, errorState, noSessionState, passwordMismatchState, verifyEmailState, type GameLinkState } from './gameLinkState'
 
 /** Una cuenta que pidió ser administrador de un juego y espera que un propietario la apruebe */
 export interface AdminRequest {
@@ -14,7 +24,8 @@ export interface AdminRequest {
 
 /** Qué pasó al dar de alta a un administrador en la base de un juego */
 export interface ProvisionResult {
-  status: 'created' | 'exists' | 'error'
+  /** 'account-only': se creó la cuenta pero no se pudo darla de alta en `admins` (las Rules de ese juego aún no tienen la capa de administradores) */
+  status: 'created' | 'account-only' | 'exists' | 'error'
   /** UID de la cuenta en la base del juego (cuando se creó) */
   uid?: string
   message: string
@@ -29,10 +40,21 @@ export interface GameLinkOptions {
   /** false mientras la configuración de Firebase del juego siga siendo el relleno PENDIENTE_ */
   hasRealConfig: boolean
   /**
-   * true cuando las Rules del juego ya exigen una sesión de administrador (owners / admins / adminRequests). Mientras sea false el juego se
-   * consulta como hasta ahora (sesión anónima sobre sus Rules actuales) y el portal no pide ninguna conexión extra.
+   * true cuando las Rules del juego ya exigen una sesión de administrador para LEER (owners / admins / adminRequests). Mientras sea false el juego se
+   * consulta como hasta ahora y el portal no pide ninguna conexión extra para leerlo.
    */
   requiresAdmin: boolean
+  /**
+   * true cuando el portal gestiona a los administradores en este juego: crea su cuenta al iniciar sesión o al crear al administrador, hace propietario
+   * al correo raíz y sincroniza la contraseña. Sirve aunque `requiresAdmin` sea false: la cuenta existe y el alta en `admins` llega cuando las Rules
+   * tengan la capa de administradores.
+   */
+  manageAdmins: boolean
+  /**
+   * El correo raíz de confianza (GAME_BOOTSTRAP_OWNER_EMAIL). La cuenta de ese correo, cuando Firebase confirma que es suya, se hace propietaria del juego
+   * sola (las Rules lo permiten solo en ese caso): no hay que escribir nada en la consola. Sin esto el primer propietario habría que crearlo a mano.
+   */
+  bootstrapOwnerEmail?: string
   /** Solo para pruebas: se llama con la App secundaria que crea cuentas, para apuntarla al emulador de Auth */
   configureApp?: (app: FirebaseApp) => void
 }
@@ -45,6 +67,7 @@ export interface GameLink {
   readonly gameId: GameId
   readonly displayName: string
   readonly requiresAdmin: boolean
+  readonly manageAdmins: boolean
   /** Comprueba la sesión y si la cuenta figura en `admins` / `owners` o ya pidió acceso */
   check(): Promise<GameLinkState>
   /** Inicia sesión con la cuenta del administrador y comprueba su estado */
@@ -61,6 +84,10 @@ export interface GameLink {
   provisionAdmin(email: string, temporaryPassword: string): Promise<ProvisionResult>
   /** (Propietario) Da de alta o de baja a una cuenta en `admins` */
   setAdmin(uid: string, enabled: boolean): Promise<void>
+  /** (Propietario) Hace propietaria, o quita el rol de propietaria, a una cuenta que ya es administradora */
+  setOwner(uid: string, enabled: boolean): Promise<void>
+  /** Vuelve a enviar el correo de confirmación de la sesión abierta. false si no hay sesión o no se pudo enviar */
+  resendVerification(): Promise<boolean>
   /** (Propietario) Solicitudes de acceso pendientes, de la más antigua a la más reciente */
   listRequests(): Promise<AdminRequest[]>
   /** (Propietario) Aprueba una solicitud: da de alta la cuenta y borra la solicitud */
@@ -75,24 +102,21 @@ export interface GameLink {
 
 const CONNECTED_CACHE_MS = 5 * 60 * 1000
 const FAILED_CACHE_MS = 3 * 1000
+const VERIFICATION_RESEND_MS = 10 * 60 * 1000
 
 function errorCode(error: unknown): string {
   return String((error as { code?: unknown } | null)?.code ?? (error as Error | null)?.message ?? '')
 }
 
 export function createGameLink(options: GameLinkOptions): GameLink {
-  const { gameId, displayName: name, app, db, firebaseConfig, hasRealConfig, requiresAdmin, configureApp } = options
-  const auth: Auth | null = requiresAdmin && hasRealConfig ? getAuth(app) : null
+  const { gameId, displayName: name, app, db, firebaseConfig, hasRealConfig, requiresAdmin, manageAdmins, configureApp, bootstrapOwnerEmail } = options
+  const auth: Auth | null = (requiresAdmin || manageAdmins) && hasRealConfig ? getAuth(app) : null
   const missingConfig = () => errorState(`Falta la configuración de Firebase de ${name} en el portal.`)
   let cachedLink: { at: number; link: GameLinkState } | null = null
+  let verificationSentAt = 0
+  const isRootOwnerEmail = (email?: string | null) => Boolean(bootstrapOwnerEmail && email && email.toLowerCase() === bootstrapOwnerEmail.toLowerCase())
 
-  async function check(): Promise<GameLinkState> {
-    if (!requiresAdmin) return { status: 'connected', message: '' }
-    if (!auth) return missingConfig()
-    await auth.authStateReady()
-    const user = auth.currentUser
-    if (!user || user.isAnonymous) return noSessionState(name)
-
+  async function readState(user: User): Promise<GameLinkState> {
     try {
       // Cada cuenta puede leer solo sus propios nodos de `admins`, `owners` y `adminRequests`, lo que basta para saber en qué punto está
       const [admin, owner, request] = await Promise.all([
@@ -113,6 +137,56 @@ export function createGameLink(options: GameLinkOptions): GameLink {
     }
   }
 
+  /**
+   * La cuenta del correo raíz se hace propietaria y administradora sola, una vez que Firebase confirma que el correo es suyo. Devuelve el estado a
+   * mostrar si todavía no se pudo (falta confirmar el correo, o falló la escritura) y null cuando quedó hecho.
+   */
+  async function claimOwnership(user: User): Promise<GameLinkState | null> {
+    await user.reload()
+    if (!user.emailVerified) {
+      // Sin la confirmación, las Rules no dejan: así nadie se queda con el juego registrando ese correo antes que su dueño
+      if (Date.now() - verificationSentAt > VERIFICATION_RESEND_MS) {
+        try {
+          await sendEmailVerification(user)
+          verificationSentAt = Date.now()
+        } catch {
+          // Se vuelve a intentar en la próxima comprobación, o con "Reenviar correo"
+        }
+      }
+      return verifyEmailState(name, user.email ?? '', user.uid)
+    }
+    await user.getIdToken(true) // el token tiene que traer email_verified = true para que las Rules lo acepten
+    try {
+      await set(ref(db, `owners/${user.uid}`), true)
+      await set(ref(db, `admins/${user.uid}`), true)
+    } catch (error) {
+      return errorState(`No se pudo registrar al propietario de ${name} (${errorCode(error) || 'error desconocido'}).`)
+    }
+    return null
+  }
+
+  async function check(): Promise<GameLinkState> {
+    if (!requiresAdmin && !manageAdmins) return { status: 'connected', message: '' }
+    if (!auth) return requiresAdmin ? missingConfig() : { status: 'connected', message: '' }
+    await auth.authStateReady()
+    const user = auth.currentUser
+    if (!user || user.isAnonymous) return noSessionState(name)
+
+    const state = await readState(user)
+    // También con 'error': donde las Rules aún no tienen la capa de administradores la confirmación del correo se pide igual, para que el propietario
+    // quede hecho en cuanto se publiquen
+    const needsOwnership =
+      isRootOwnerEmail(user.email) &&
+      (state.status === 'not-admin' || state.status === 'pending' || state.status === 'error' || (state.status === 'connected' && !state.isOwner))
+    if (!needsOwnership) return state
+    try {
+      const outcome = await claimOwnership(user)
+      return outcome ?? readState(user)
+    } catch {
+      return state
+    }
+  }
+
   async function currentLink(): Promise<GameLinkState> {
     const now = Date.now()
     if (cachedLink && now - cachedLink.at < (cachedLink.link.status === 'connected' ? CONNECTED_CACHE_MS : FAILED_CACHE_MS)) return cachedLink.link
@@ -127,7 +201,11 @@ export function createGameLink(options: GameLinkOptions): GameLink {
     try {
       await signInWithEmailAndPassword(auth, email, password)
     } catch (error) {
-      return describeSignInError(name, error)
+      const failed = describeSignInError(name, error)
+      // La cuenta todavía no existe en este juego: se crea sola con la contraseña del portal. La cuenta raíz recibe además la confirmación del correo
+      // para hacerse propietaria; cualquier otra deja su solicitud de acceso para que un propietario la apruebe
+      if (failed.status === 'no-account') return requestAccess({ email, password })
+      return failed
     }
     const link = await check()
     cachedLink = { at: Date.now(), link }
@@ -158,14 +236,18 @@ export function createGameLink(options: GameLinkOptions): GameLink {
       }
     }
 
-    try {
-      const admin = await get(ref(db, `admins/${user.uid}`))
-      if (admin.val() !== true) {
-        const existing = await get(ref(db, `adminRequests/${user.uid}`))
-        if (!existing.exists()) await set(ref(db, `adminRequests/${user.uid}`), { email: user.email, requestedAt: Date.now() })
+    // La cuenta raíz no pide acceso: se hace propietaria sola en `check`, que además le pide confirmar el correo. Ni siquiera toca la base aquí, porque
+    // donde las Rules aún no tienen la capa de administradores esa lectura fallaría antes de pedirle la confirmación
+    if (!isRootOwnerEmail(user.email)) {
+      try {
+        const admin = await get(ref(db, `admins/${user.uid}`))
+        if (admin.val() !== true) {
+          const existing = await get(ref(db, `adminRequests/${user.uid}`))
+          if (!existing.exists()) await set(ref(db, `adminRequests/${user.uid}`), { email: user.email, requestedAt: Date.now() })
+        }
+      } catch (error) {
+        return errorState(`No se pudo enviar la solicitud a ${name} (${errorCode(error) || 'error desconocido'}).`)
       }
-    } catch (error) {
-      return errorState(`No se pudo enviar la solicitud a ${name} (${errorCode(error) || 'error desconocido'}).`)
     }
 
     cachedLink = null
@@ -195,7 +277,11 @@ export function createGameLink(options: GameLinkOptions): GameLink {
     try {
       await set(ref(db, `admins/${uid}`), true)
     } catch {
-      return { status: 'error', uid, message: `${name}: se creó la cuenta, pero no se pudo darla de alta como administrador. ¿Su cuenta es propietaria de ${name}?` }
+      return {
+        status: 'account-only',
+        uid,
+        message: `${name}: se creó la cuenta, pero todavía no se pudo darla de alta como administrador (las Rules de ${name} aún no tienen la capa de administradores, o su cuenta no es propietaria). Se completa con "Sincronizar con los juegos".`,
+      }
     }
     return { status: 'created', uid, message: '' }
   }
@@ -217,12 +303,30 @@ export function createGameLink(options: GameLinkOptions): GameLink {
     gameId,
     displayName: name,
     requiresAdmin,
+    manageAdmins,
     check,
     connect,
     requestAccess,
     provisionAdmin,
     setAdmin,
     listRequests,
+
+    async setOwner(uid, enabled) {
+      if (enabled) await set(ref(db, `owners/${uid}`), true)
+      else await remove(ref(db, `owners/${uid}`))
+    },
+
+    async resendVerification() {
+      const user = auth?.currentUser
+      if (!user || user.isAnonymous) return false
+      try {
+        await sendEmailVerification(user)
+        verificationSentAt = Date.now()
+        return true
+      } catch {
+        return false
+      }
+    },
 
     async ensure() {
       if (!requiresAdmin || !hasRealConfig) return
