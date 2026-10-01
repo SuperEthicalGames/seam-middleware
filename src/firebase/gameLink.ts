@@ -1,9 +1,9 @@
 import { deleteApp, initializeApp, type FirebaseApp, type FirebaseOptions } from 'firebase/app'
-import { createUserWithEmailAndPassword, getAuth, signInWithEmailAndPassword, signOut, updatePassword, type Auth } from 'firebase/auth'
+import { createUserWithEmailAndPassword, getAuth, sendPasswordResetEmail, signInWithEmailAndPassword, signOut, updatePassword, type Auth } from 'firebase/auth'
 import { get, ref, remove, set, type Database } from 'firebase/database'
 import type { GameId } from '@/types/game'
 import { PortalError } from '@/utils/errors'
-import { checkingState, classifyGameLink, describeSignInError, errorState, noSessionState, type GameLinkState } from './gameLinkState'
+import { checkingState, classifyGameLink, describeSignInError, errorState, noSessionState, passwordMismatchState, type GameLinkState } from './gameLinkState'
 
 /** Una cuenta que pidió ser administrador de un juego y espera que un propietario la apruebe */
 export interface AdminRequest {
@@ -67,6 +67,8 @@ export interface GameLink {
   approveRequest(uid: string): Promise<void>
   /** (Propietario) Rechaza una solicitud */
   rejectRequest(uid: string): Promise<void>
+  /** Envía al correo el enlace para restablecer la contraseña de la cuenta en la base del juego. false si no se pudo enviar */
+  resetPassword(email: string): Promise<boolean>
   /** Cambia la contraseña de la sesión abierta en el juego. false si no hay sesión o falló (la contraseña de ese juego quedó como estaba) */
   changePassword(newPassword: string): Promise<boolean>
 }
@@ -149,7 +151,7 @@ export function createGameLink(options: GameLinkOptions): GameLink {
           user = (await createUserWithEmailAndPassword(auth, credentials.email, credentials.password)).user
         } catch (createError) {
           if (errorCode(createError).includes('email-already-in-use')) {
-            return errorState(`Ya existe una cuenta con ese correo en ${name}, pero con otra contraseña. Use la contraseña de esa cuenta e intente de nuevo.`)
+            return passwordMismatchState(name)
           }
           return describeSignInError(name, createError)
         }
@@ -240,6 +242,16 @@ export function createGameLink(options: GameLinkOptions): GameLink {
 
     async rejectRequest(uid) {
       await remove(ref(db, `adminRequests/${uid}`))
+    },
+
+    async resetPassword(email) {
+      if (!auth) return false
+      try {
+        await sendPasswordResetEmail(auth, email)
+        return true
+      } catch {
+        return false
+      }
     },
 
     async changePassword(newPassword) {

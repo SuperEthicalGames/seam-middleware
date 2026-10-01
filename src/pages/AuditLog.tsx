@@ -45,8 +45,13 @@ export function AuditLog() {
             <span className="font-mono text-xs">{e.serial}</span>
             {e.game && <span className="ml-1 text-ink-400">({GAME_CATALOG[e.game as GameId]?.displayName ?? e.game})</span>}
           </span>
+        ) : e.targetEmail ? (
+          <span>
+            {e.targetEmail}
+            {e.game && <span className="ml-1 text-ink-400">({GAME_CATALOG[e.game as GameId]?.displayName ?? e.game})</span>}
+          </span>
         ) : (
-          (e.targetEmail ?? '—')
+          '—'
         ),
     },
     {

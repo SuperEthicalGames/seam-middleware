@@ -12,7 +12,7 @@ type PasswordAction = { game: GameId; mode: 'connect' | 'create' }
  * conectar con la contraseña, o crear la cuenta del juego y pedir acceso (un propietario de ese juego lo aprueba en Administradores).
  */
 export function GameLinksBanner() {
-  const { games, connectGames, requestGameAccess, user } = useAuth()
+  const { games, connectGames, requestGameAccess, refreshGames, resetGamePassword, user } = useAuth()
   const { showToast } = useToast()
   const [action, setAction] = useState<PasswordAction | null>(null)
   const [password, setPassword] = useState('')
@@ -42,6 +42,28 @@ export function GameLinksBanner() {
     }
   }
 
+  async function recheck() {
+    setBusy(true)
+    try {
+      await refreshGames()
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function sendReset(game: GameId) {
+    setBusy(true)
+    try {
+      const sent = await resetGamePassword(game)
+      showToast(
+        sent ? 'success' : 'error',
+        sent ? `Le enviamos a ${user?.email} el enlace para restablecer la contraseña de ${GAME_CATALOG[game].displayName}. Use la misma contraseña del portal.` : 'No se pudo enviar el correo. Intente de nuevo en unos minutos.',
+      )
+    } finally {
+      setBusy(false)
+    }
+  }
+
   async function requestWithoutPassword(game: GameId) {
     setBusy(true)
     try {
@@ -65,21 +87,33 @@ export function GameLinksBanner() {
             <p className="mt-0.5">{state.message}</p>
             {state.uid && (state.status === 'not-admin' || state.status === 'pending') && <p className="mt-1 font-mono text-xs">UID: {state.uid}</p>}
           </div>
-          {(state.status === 'no-session' || state.status === 'error') && (
-            <button type="button" className="btn-secondary" disabled={busy} onClick={() => setAction({ game, mode: 'connect' })}>
-              Conectar
-            </button>
-          )}
-          {state.status === 'no-account' && (
-            <button type="button" className="btn-secondary" disabled={busy} onClick={() => setAction({ game, mode: 'create' })}>
-              Crear cuenta y solicitar acceso
-            </button>
-          )}
-          {state.status === 'not-admin' && (
-            <button type="button" className="btn-secondary" disabled={busy} onClick={() => requestWithoutPassword(game)}>
-              Solicitar acceso
-            </button>
-          )}
+          <div className="flex flex-wrap gap-2">
+            {(state.status === 'no-session' || state.status === 'error' || state.status === 'password-mismatch') && (
+              <button type="button" className="btn-secondary" disabled={busy} onClick={() => setAction({ game, mode: 'connect' })}>
+                Conectar
+              </button>
+            )}
+            {state.status === 'no-account' && (
+              <button type="button" className="btn-secondary" disabled={busy} onClick={() => setAction({ game, mode: 'create' })}>
+                Crear cuenta y solicitar acceso
+              </button>
+            )}
+            {(state.status === 'no-account' || state.status === 'password-mismatch') && (
+              <button type="button" className="btn-secondary" disabled={busy} onClick={() => sendReset(game)}>
+                Restablecer contraseña de {GAME_CATALOG[game].displayName}
+              </button>
+            )}
+            {state.status === 'not-admin' && (
+              <button type="button" className="btn-secondary" disabled={busy} onClick={() => requestWithoutPassword(game)}>
+                Solicitar acceso
+              </button>
+            )}
+            {(state.status === 'not-admin' || state.status === 'pending' || state.status === 'error') && (
+              <button type="button" className="btn-secondary" disabled={busy} onClick={recheck}>
+                Comprobar de nuevo
+              </button>
+            )}
+          </div>
         </div>
       ))}
 

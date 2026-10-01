@@ -27,6 +27,10 @@ interface AuthContextValue {
   games: GameLinkStates
   /** Conecta con la contraseña del administrador los juegos que falten (por ejemplo si la sesión se abrió antes, o la contraseña cambió) */
   connectGames: (password: string) => Promise<void>
+  /** Vuelve a comprobar el estado de cada juego (por ejemplo, tras esperar a que un propietario apruebe la solicitud) */
+  refreshGames: () => Promise<void>
+  /** Envía al correo el enlace para restablecer la contraseña de la cuenta en la base de un juego */
+  resetGamePassword: (game: GameId) => Promise<boolean>
   /** Pide acceso de administrador en un juego (crea la cuenta del juego si hace falta). Un propietario de ese juego debe aprobarlo */
   requestGameAccess: (game: GameId, password?: string) => Promise<GameLinkState>
   signIn: (email: string, password: string) => Promise<void>
@@ -97,6 +101,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const email = centralAuth.currentUser?.email
         if (!email) return
         await connectAll(email, password)
+      },
+      async refreshGames() {
+        await Promise.all(
+          links.map(async (link) => {
+            try {
+              setGame(link.gameId, await link.check())
+            } catch {
+              setGame(link.gameId, noSessionState(link.displayName))
+            }
+          }),
+        )
+      },
+      async resetGamePassword(game) {
+        const email = centralAuth.currentUser?.email
+        return email ? GAME_LINKS[game].resetPassword(email) : false
       },
       async requestGameAccess(game, password) {
         const link = GAME_LINKS[game]

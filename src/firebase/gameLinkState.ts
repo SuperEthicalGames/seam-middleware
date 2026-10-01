@@ -4,7 +4,7 @@
  * administrador real allí (no una anónima). Este archivo solo clasifica el resultado, para decirle al administrador qué falta, en palabras
  * claras. Es el mismo para los tres juegos: solo cambia el nombre.
  */
-export type GameLinkStatus = 'checking' | 'connected' | 'no-session' | 'no-account' | 'not-admin' | 'pending' | 'error'
+export type GameLinkStatus = 'checking' | 'connected' | 'no-session' | 'no-account' | 'password-mismatch' | 'not-admin' | 'pending' | 'error'
 
 export interface GameLinkState {
   status: GameLinkStatus
@@ -23,6 +23,14 @@ export function noSessionState(name: string): GameLinkState {
   return {
     status: 'no-session',
     message: `${name} no está conectado: falta iniciar sesión de administrador en su base de datos. Conéctelo con su contraseña.`,
+  }
+}
+
+/** La cuenta del juego existe, pero con otra contraseña (por ejemplo, tras restablecer la del portal): hay que restablecer la del juego */
+export function passwordMismatchState(name: string): GameLinkState {
+  return {
+    status: 'password-mismatch',
+    message: `Ya existe una cuenta con su correo en ${name}, pero con otra contraseña (por ejemplo, si restableció la del portal). Restablézcala desde el correo que se le envía y use la misma contraseña del portal.`,
   }
 }
 

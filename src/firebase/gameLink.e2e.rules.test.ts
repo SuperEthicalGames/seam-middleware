@@ -181,7 +181,11 @@ describe.skipIf(!dbHost || !authHost)('administradores de un juego, de extremo a
 
   it('si el correo ya tiene cuenta con otra contraseña, pedir acceso lo explica en vez de crear nada', async () => {
     const state = await browser().link.requestAccess({ email: ANA.email, password: 'Distinta123!' })
-    expect(state.status).toBe('error')
+    expect(state.status).toBe('password-mismatch')
     expect(state.message).toMatch(/otra contraseña/i)
+  })
+
+  it('para salir de ahí, se puede enviar el correo para restablecer la contraseña de la cuenta del juego', async () => {
+    expect(await browser().link.resetPassword(ANA.email)).toBe(true)
   })
 })
