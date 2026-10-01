@@ -19,6 +19,21 @@ const dbHost = process.env.FIREBASE_DATABASE_EMULATOR_HOST
 const authHost = process.env.FIREBASE_AUTH_EMULATOR_HOST
 const PROJECT = 'demo-gamelink'
 
+/**
+ * El código del correo de confirmación que el emulador de Auth "envió". Con `emulators:exec --project X` el emulador corre en modo de proyecto único y archiva
+ * los códigos bajo X, no bajo el proyecto de la prueba, así que se busca en los dos.
+ */
+async function verificationCode(email: string): Promise<string | undefined> {
+  const projects = [...new Set([PROJECT, process.env.GCLOUD_PROJECT, process.env.GOOGLE_CLOUD_PROJECT].filter((id): id is string => !!id))]
+  for (const project of projects) {
+    const response = await fetch(`http://${authHost}/emulator/v1/projects/${project}/oobCodes`)
+    const { oobCodes } = (await response.json()) as { oobCodes?: { email: string; requestType: string; oobCode: string }[] }
+    const code = [...(oobCodes ?? [])].reverse().find((c) => c.email === email && c.requestType === 'VERIFY_EMAIL')
+    if (code) return code.oobCode
+  }
+  return undefined
+}
+
 describe.skipIf(!dbHost || !authHost)('administradores de un juego, de extremo a extremo con las Rules reales de Cafetero', () => {
   let env: RulesTestEnvironment
   let sequence = 0
@@ -78,11 +93,9 @@ describe.skipIf(!dbHost || !authHost)('administradores de un juego, de extremo a
 
   /** Lo que hace Firebase cuando la persona abre el enlace del correo de confirmación, con el emulador */
   async function confirmEmailThroughEmulator(email: string) {
-    const response = await fetch(`http://${authHost}/emulator/v1/projects/${PROJECT}/oobCodes`)
-    const { oobCodes } = (await response.json()) as { oobCodes: { email: string; requestType: string; oobCode: string }[] }
-    const code = [...oobCodes].reverse().find((c) => c.email === email && c.requestType === 'VERIFY_EMAIL')
+    const code = await verificationCode(email)
     expect(code, 'el correo de confirmación debería haberse enviado').toBeTruthy()
-    await applyActionCode(getAuth(ownerSide.app), code!.oobCode)
+    await applyActionCode(getAuth(ownerSide.app), code!)
   }
 
   it('el propietario sale solo: crea su cuenta, recibe la confirmación del correo y, al confirmarla, queda propietario sin tocar la consola', async () => {
@@ -303,11 +316,9 @@ describe.skipIf(!dbHost || !authHost)('administradores de un juego, de extremo a
       expect(first.status).toBe('verify-email')
 
       // Confirma el correo: sin la capa todavía no puede hacerse propietaria, y eso no se le muestra
-      const response = await fetch(`http://${authHost}/emulator/v1/projects/${PROJECT}/oobCodes`)
-      const { oobCodes } = (await response.json()) as { oobCodes: { email: string; requestType: string; oobCode: string }[] }
-      const code = [...oobCodes].reverse().find((c) => c.email === ROOT_BARE && c.requestType === 'VERIFY_EMAIL')
+      const code = await verificationCode(ROOT_BARE)
       expect(code).toBeTruthy()
-      await applyActionCode(getAuth(root.app), code!.oobCode)
+      await applyActionCode(getAuth(root.app), code!)
 
       const second = await root.link.check()
       expect(second.status).not.toBe('verify-email')
