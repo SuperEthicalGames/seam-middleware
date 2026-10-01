@@ -43,6 +43,14 @@ La URL final es del tipo `https://<usuario-u-organización>.github.io/seam-middl
 
 No hace falta build ni deploy manual: no ejecutes `npm run build` seguido de una subida manual de `dist/` — el workflow ya lo hace, y hacerlo a mano puede quedar desincronizado con lo que hay en `main`.
 
+## 4 bis. Probar las Rules de Cafetero antes de publicarlas
+
+```bash
+npm run test:rules
+```
+
+Levanta el emulador de Realtime Database (requiere Java 17 o superior) y corre el adaptador del Juego 3 contra `game-database-rules/cafetero.rules.json`: como administrador funciona y como anónimo las Rules lo rechazan. Sin el emulador esas pruebas se omiten, por eso `npm test` y el deploy no dependen de él.
+
 ## 5. Verificación post-deploy
 
 Repetir la lista de la sección 75 del prompt original contra la URL pública de GitHub Pages:
@@ -56,6 +64,7 @@ Repetir la lista de la sección 75 del prompt original contra la URL pública de
 - [ ] Perfil consolidado con filtros funcionando
 - [ ] Exportar PDF respeta los filtros aplicados
 - [ ] Activar/desactivar un serial pide confirmación y queda en Auditoría
+- [ ] Cafetero carga datos sin el aviso amarillo "Cafetero no se puede consultar" (si aparece, seguir los pasos de LIMITATIONS.md sección 13: cuenta de administrador en `seam-data-game` y `admins/{uid}`)
 - [ ] Responsive en tablet (el portal es desktop-first pero debe ser usable en tablet)
 
 ## 6. Actualizaciones futuras

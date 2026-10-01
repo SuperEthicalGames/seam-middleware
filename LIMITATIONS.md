@@ -181,12 +181,23 @@ Auditoría del análisis de rendimiento contra las fórmulas reales del juego (`
 - Dashboard y Directorio siguen descargando todos los usuarios con todo su historial en cada carga. Aceptable con decenas de usuarios, no con cientos.
 - `bundleVersion` de la app sigue en 1.2.3: `appVersion` no distingue compilaciones. `scoreModel` sí distingue el significado del puntaje.
 
-## 13. Acceso por serial de equipo en el Juego 3 (2026-09-30)
+## 13. Acceso por serial de equipo en el Juego 3 y conexión del portal con Cafetero (2026-09-30)
 Cada visor del Juego 3 registra su serial solo: `identificators/gameNN = serial` y `serials/{serial} = false` (un visor nuevo nace **sin acceso**). Desde **Seriales** el administrador pasa el valor a `true`/`false`; el portal muestra el `gameNN` del equipo en la columna "Equipo". Los datos anteriores (1/0 y claves hash) se siguen mostrando y al cambiarlos se conserva su tipo numérico; la auditoría guarda siempre 1/0.
 
-Cambios de seguridad que esto trae, y que hay que hacer **en este orden** (detalle en `firebase/README.md` del repositorio del juego):
-1. Habilitar inicio de sesión **Anónimo** en Authentication de `seam-data-game` (lo usan los visores para registrarse).
-2. El portal ya **no entra como anónimo** a `seam-data-game`: inicia sesión con el mismo correo y contraseña del administrador (`AuthContext.signIn` → `signInGame3Admin`). Cada administrador necesita una cuenta con ese correo y contraseña en Authentication de `seam-data-game` y el nodo `admins/{uid} = true`. Las contraseñas de las dos bases no se sincronizan: si un administrador cambia la suya en el portal, debe cambiarla también allí. Si la cuenta no existe, el portal sigue funcionando y solo el Juego 3 avisa que falta la sesión.
-3. `game-database-rules/cafetero.rules.json` es ahora una copia de `firebase/database.rules.json` del repositorio del juego (un solo conjunto de reglas en lugar de dos que se contradecían). Publicarlas solo cuando el portal nuevo y la app nueva ya estén desplegados: el portal anterior, que entraba como anónimo, dejaría de leer datos.
+### Qué se rompió al publicar las Rules nuevas, y cómo está reparado
+Las Rules nuevas de `seam-data-game` dejan leer `users`, `identificators` y la lista de `serials` **solo a las cuentas de `admins/{uid}`**. La versión del portal que estaba publicada en `main` seguía con la configuración de relleno de Cafetero (`PENDIENTE_...`), así que no iniciaba sesión de ningún tipo y leía sin autenticar: la base respondía "permiso denegado" y el portal mostraba "No fue posible consultar: Cafetero".
 
-No probado: las reglas no se pudieron ejecutar contra el emulador (no hay Java en el equipo de desarrollo) ni se publicaron; solo se probó la lógica del portal (180 pruebas, tsc y eslint limpios). Limitación: el serial lo declara el visor, así que quien conozca el de un equipo activo podría presentarlo desde otro con la app modificada.
+La reparación (rama `analisis-por-nivel-y-resultado`):
+- El portal inicia sesión en `seam-data-game` con **el mismo correo y contraseña** con que el administrador entra al portal (`AuthContext.signIn` -> `connectGame3Admin`), y comprueba que figure en `admins/{uid}`.
+- Si algo falta, un aviso en pantalla (`Game3Banner`) dice **qué** falta (sin sesión, la cuenta no existe, la cuenta no está en `admins` con su UID, sin red...) y deja reconectar escribiendo la contraseña, sin cerrar sesión. Las páginas que consultan Cafetero muestran ese mismo motivo en vez del error genérico.
+- Se probó el adaptador contra las Rules reales en el emulador (`npm run test:rules`): como administrador lista usuarios y seriales y activa/desactiva; como anónimo o sin sesión las Rules rechazan todo.
+
+### Pasos por cada administrador (una sola vez, en la consola de Firebase de `seam-data-game`; el portal no puede hacerlos por sí solo)
+1. *Authentication -> Users -> Add user*: el **mismo correo y contraseña** que usa en el portal.
+2. Copiar el **UID** de esa cuenta y crear en *Realtime Database* el nodo `admins/{UID} = true` (booleano).
+3. Entrar al portal (o usar "Conectar Cafetero" si ya había una sesión abierta).
+4. Las contraseñas de las dos bases no se sincronizan: si el administrador cambia la suya en el portal, debe cambiarla también en la base de Cafetero (y usar "Conectar Cafetero" una vez).
+
+Además, para el control de acceso por serial: habilitar el inicio de sesión **Anónimo** en `seam-data-game` (ya está habilitado) y publicar `game-database-rules/cafetero.rules.json` (copia de `firebase/database.rules.json` del repositorio del juego).
+
+Limitación: el serial lo declara el visor, así que quien conozca el de un equipo activo podría presentarlo desde otro con la app modificada. El bloqueo por serial lo hace cumplir la app; las Rules solo impiden que un visor se active, borre o liste a los demás.
