@@ -7,11 +7,12 @@ import type { SessionFilters } from '@/utils/sessionFilters'
 import { applySessionFilters, hasActiveFilters } from '@/utils/sessionFilters'
 import { formatDateEs, formatDifficultyLabel, formatDurationEs } from '@/utils/normalize'
 import { formatExerciseLabel } from '@/utils/labels'
+import { sessionResult } from '@/utils/sessionResult'
 import { estimateCafeteroStars } from '@/utils/estimatedStars'
 import { computeSessionStats } from '@/utils/patientStats'
 import { computeExerciseLevelPerformance, computeExercisePerformance, type PerformanceTrend } from '@/utils/exercisePerformance'
 import { computePatientConclusions, formatConclusionsText } from '@/utils/patientConclusions'
-import { drawHorizontalBarChart, drawLevelChart, drawRatingCircles } from './pdfCharts'
+import { drawLevelChart, drawRatingCircles } from './pdfCharts'
 
 interface GenerateParams {
   profile: ConsolidatedProfile
@@ -188,41 +189,36 @@ export function generatePatientReportPdf({ profile, filters, generatedByEmail }:
       autoTable(doc, {
         startY: y + 6,
         margin: { left: marginX, right: marginX },
-        head: [['Ejercicio', 'Sesiones', 'Puntaje prom.', 'Rendimiento', 'Mejor puntaje', 'Duración prom.', 'Velocidad', 'Tendencia']],
+        head: [['Ejercicio', 'Sesiones', 'Ganadas', 'Rendimiento', 'Duración prom.', 'Velocidad', 'Errores', 'Tendencia']],
         body: exerciseRows.map((ex) => [
           formatExerciseLabel(ex.exercise),
           String(ex.count),
-          ex.avgScore === null ? 'No disponible' : String(ex.avgScore),
+          ex.winRate === null
+            ? 'No registrado'
+            : `${ex.wins} de ${ex.wins + ex.losses} (${ex.winRate}%)${ex.highestLevelWon === null ? '' : `\nNivel más alto: ${formatDifficultyLabel(ex.highestLevelWon)}`}`,
           ex.avgScorePercent === null ? 'No disponible' : `${ex.avgScorePercent}%`,
-          ex.bestScore === null ? 'No disponible' : String(ex.bestScore),
           formatDurationEs(ex.avgDurationSeconds),
           ex.avgDurationPercent === null ? 'No disponible' : `${ex.avgDurationPercent}%`,
-          ex.trend === null ? 'Insuficiente' : TREND_LABEL[ex.trend],
+          ex.avgErrors === null && ex.arms === null
+            ? 'No registrado'
+            : [ex.avgErrors === null ? null : `${ex.avgErrors} por intento`, ex.arms === null ? null : `Izq. ${ex.arms.left} · Der. ${ex.arms.right}`].filter(Boolean).join('\n'),
+          ex.trend === null ? 'Insuficiente' : `${TREND_LABEL[ex.trend]}${ex.trendLevel === null ? '' : `\n(${formatDifficultyLabel(ex.trendLevel)})`}`,
         ]),
-        styles: { fontSize: 8.5, cellPadding: 5 },
+        styles: { fontSize: 8, cellPadding: 4 },
         headStyles: { fillColor: [90, 90, 90], textColor: 255 },
       })
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       y = (doc as any).lastAutoTable.finalY + 20
 
-      // Gráfico: rendimiento (%) por ejercicio — normalizado, sí comparable entre
-      // ejercicios de un mismo usuario (ver scoreReference.ts).
-      const barData = exerciseRows
-        .filter((ex) => ex.avgScorePercent !== null)
-        .map((ex) => ({ label: formatExerciseLabel(ex.exercise), value: ex.avgScorePercent as number, displayValue: `${ex.avgScorePercent}%` }))
-      if (barData.length > 0) {
-        subheading('Rendimiento por ejercicio (% de una partida de referencia)')
-        ensureSpace(barData.length * 16 + 20)
-        y = drawHorizontalBarChart(doc, { x: marginX, y, width: contentWidth, labelWidth: 150, data: barData, max: 100, color: gameColor })
-        y += 10
-      }
+      // No hay un gráfico que compare un ejercicio contra otro: cada ejercicio mide una tarea distinta con
+      // su propia escala, y un % de una tarea contra un % de otra no dice en cuál rinde mejor el usuario.
 
       // Una fila por minijuego con una gráfica por nivel de dificultad, todas en la misma
       // escala 0-100 % para comparar el rendimiento entre niveles del MISMO minijuego
       // (mismo dato que ExerciseLevelCharts en la UI).
       ensureSpace(140) // que el título no quede solo al final de una página, sin su primera fila de gráficas
-      subheading('Rendimiento por nivel de dificultad (% de una partida de referencia)')
+      subheading('Rendimiento por nivel de dificultad (% del máximo de cada nivel)')
       y += 12
       const chartColumnWidth = contentWidth / 3
       for (const ex of computeExerciseLevelPerformance(filtered, r.game)) {
@@ -267,7 +263,7 @@ export function generatePatientReportPdf({ profile, filters, generatedByEmail }:
     autoTable(doc, {
       startY: y + 6,
       margin: { left: marginX, right: marginX },
-      head: [['Fecha', 'Ejercicio', 'Dificultad', 'Puntaje', 'Estrellas', 'Duración']],
+      head: [['Fecha', 'Ejercicio', 'Dificultad', 'Puntaje', 'Estrellas', 'Duración', 'Resultado', 'Errores']],
       body: filtered.map((s, i) => {
         const info = starInfos[i]
         return [
@@ -277,6 +273,8 @@ export function generatePatientReportPdf({ profile, filters, generatedByEmail }:
           s.score === null ? 'No disponible' : String(s.score),
           info === null ? 'No aplica' : '', // se dibuja con círculos en didDrawCell
           formatDurationEs(s.durationSeconds),
+          resultLabel(s),
+          s.metrics === null || s.metrics.errors === null ? 'No registrado' : String(s.metrics.errors),
         ]
       }),
       styles: { fontSize: 8.5, cellPadding: 5, minCellHeight: 16 },
@@ -312,6 +310,11 @@ export function generatePatientReportPdf({ profile, filters, generatedByEmail }:
   }
 
   doc.save(`SEAM_reporte_${profile.identifier}.pdf`)
+}
+
+function resultLabel(s: NormalizedSession): string {
+  const result = sessionResult(s)
+  return result === null ? 'No registrado' : result === 'win' ? 'Ganó' : 'Perdió'
 }
 
 function hexToRgb(hex: string): [number, number, number] {

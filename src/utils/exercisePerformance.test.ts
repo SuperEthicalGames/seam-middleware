@@ -17,6 +17,13 @@ function session(overrides: Partial<NormalizedSession>): NormalizedSession {
     stars: 3,
     durationSeconds: 60,
     durationRaw: '1:00 seconds',
+    isWin: null,
+    timestampUtc: null,
+    scoreModel: null,
+    sessionId: null,
+    attempt: null,
+    device: null,
+    metrics: null,
     ...overrides,
   }
 }
@@ -51,16 +58,16 @@ describe('computeExercisePerformance', () => {
     expect(result[0].avgDurationPercent).toBeNull()
   })
 
-  it('calcula avgScorePercent usando la referencia propia de cada minijuego de Cafetero', () => {
+  it('calcula avgScorePercent contra el máximo del minijuego y del nivel de cada sesión de Cafetero', () => {
     const sessions = [
       session({ game: 'game3', exercise: 'CoffeeElaboration', score: 1000, uid: 'u2' }),
-      session({ game: 'game3', exercise: 'CoffeeClassification', score: 1000, uid: 'u2' }),
+      session({ game: 'game3', exercise: 'CoffeeClassification', difficulty: 'easy', score: 1400, uid: 'u2' }),
     ]
     const result = computeExercisePerformance(sessions, 'game3')
     const elaboration = result.find((r) => r.exercise === 'CoffeeElaboration')!
     const classification = result.find((r) => r.exercise === 'CoffeeClassification')!
     expect(elaboration.avgScorePercent).toBe(100) // 1000/1000
-    expect(classification.avgScorePercent).toBe(40) // 1000/2500
+    expect(classification.avgScorePercent).toBe(50) // 1400/2800, el máximo del nivel Básico (1000 + 20 × 90 s)
   })
 
   it('descarta sesiones sin ejercicio identificado en vez de agruparlas de forma inventada', () => {
@@ -214,16 +221,33 @@ describe('computeExerciseLevelPerformance', () => {
     expect(easy.avgScorePercent).toBe(70)
   })
 
-  it('expresa el puntaje como % de la referencia propia de cada minijuego de Cafetero', () => {
+  it('expresa el puntaje como % del máximo de su minijuego y su nivel en Cafetero', () => {
     const sessions = [
-      session({ game: 'game3', exercise: 'CoffeeClassification', difficulty: 'medium', score: 1250 }),
-      session({ game: 'game3', exercise: 'CoffeeWash', difficulty: 'medium', score: 50 }),
+      session({ game: 'game3', exercise: 'CoffeeClassification', difficulty: 'medium', score: 1100 }),
+      session({ game: 'game3', exercise: 'CoffeeWash', difficulty: 'medium', score: 500, scoreModel: 2 }),
     ]
     const result = computeExerciseLevelPerformance(sessions, 'game3')
     const classification = result.find((r) => r.exercise === 'CoffeeClassification')!
     const wash = result.find((r) => r.exercise === 'CoffeeWash')!
-    expect(classification.levels[1].points[0].scorePercent).toBe(50) // 1250/2500
-    expect(wash.levels[1].points[0].scorePercent).toBe(50) // 50/100
+    expect(classification.levels[1].points[0].scorePercent).toBe(50) // 1100/2200, el máximo del nivel Medio (1000 + 20 × 60 s)
+    expect(wash.levels[1].points[0].scorePercent).toBe(50) // 500/1000
+  })
+
+  it('no grafica el puntaje de Lavado de compilaciones anteriores: valía 100 en toda victoria, no mide nada', () => {
+    const wash = computeExerciseLevelPerformance([session({ game: 'game3', exercise: 'CoffeeWash', score: 100, scoreModel: null })], 'game3')[0]
+    expect(wash.count).toBe(1)
+    expect(wash.levels[0].points).toHaveLength(0)
+  })
+
+  it('no mide la velocidad de una derrota: dura exactamente el límite de tiempo', () => {
+    const sessions = [
+      session({ game: 'game3', exercise: 'CoffeeCollection', difficulty: 'easy', score: 400, durationSeconds: 120, isWin: false, scoreModel: 2 }),
+      session({ game: 'game3', exercise: 'CoffeeCollection', difficulty: 'easy', score: 3000, durationSeconds: 60, isWin: true, scoreModel: 2 }),
+    ]
+    const easy = computeExerciseLevelPerformance(sessions, 'game3')[0].levels[0]
+    expect(easy.wins).toBe(1)
+    expect(easy.losses).toBe(1)
+    expect(easy.points.map((p) => p.speedPercent)).toEqual([null, 50])
   })
 
   it('cuenta las sesiones sin puntaje pero no genera un punto para ellas', () => {
@@ -283,5 +307,116 @@ describe('computeExerciseLevelPerformance', () => {
       'CoffeeWash',
       'CoffeeElaboration',
     ])
+  })
+})
+
+describe('computeExercisePerformance con resultados y niveles', () => {
+  const win = (overrides: Partial<NormalizedSession>) =>
+    session({ game: 'game3', exercise: 'CoffeeCollection', isWin: true, scoreModel: 2, ...overrides })
+
+  it('no mezcla niveles en la tendencia: un usuario que gana más rápido y sube de nivel no aparece como "disminuyendo"', () => {
+    // Puntaje = (1000 + 20 × segundos que sobran) × fracción. Mejora real, pero el nivel Medio tiene un límite menor,
+    // así que los mismos segundos sobrantes valen menos puntos crudos.
+    const sessions = [
+      win({ difficulty: 'easy', date: '2026-01-01', score: 1000 + 20 * 40 }),
+      win({ difficulty: 'easy', date: '2026-01-02', score: 1000 + 20 * 50 }),
+      win({ difficulty: 'easy', date: '2026-01-03', score: 1000 + 20 * 60 }),
+      win({ difficulty: 'easy', date: '2026-01-04', score: 1000 + 20 * 70 }),
+      win({ difficulty: 'medium', date: '2026-01-05', score: 1000 + 20 * 30 }),
+      win({ difficulty: 'medium', date: '2026-01-06', score: 1000 + 20 * 35 }),
+    ]
+    const [ex] = computeExercisePerformance(sessions, 'game3')
+    expect(ex.trendLevel).toBe('easy') // el nivel con más sesiones con puntaje (4)
+    expect(ex.trend).toBe('mejorando')
+    expect(ex.highestLevelWon).toBe('medium')
+  })
+
+  it('con menos de 4 sesiones con puntaje en un mismo nivel no hay tendencia, aunque haya 6 en total', () => {
+    const sessions = [
+      win({ difficulty: 'easy', date: '2026-01-01', score: 1500 }),
+      win({ difficulty: 'easy', date: '2026-01-02', score: 1700 }),
+      win({ difficulty: 'easy', date: '2026-01-03', score: 1900 }),
+      win({ difficulty: 'medium', date: '2026-01-04', score: 1500 }),
+      win({ difficulty: 'medium', date: '2026-01-05', score: 1700 }),
+      win({ difficulty: 'medium', date: '2026-01-06', score: 1900 }),
+    ]
+    const [ex] = computeExercisePerformance(sessions, 'game3')
+    expect(ex.trend).toBeNull()
+    expect(ex.trendLevel).toBeNull()
+  })
+
+  it('la duración promedio y la velocidad solo cuentan las victorias cuando se conoce el resultado', () => {
+    const sessions = [
+      win({ difficulty: 'easy', durationSeconds: 60, score: 2000 }),
+      win({ difficulty: 'easy', isWin: false, durationSeconds: 120, score: 300 }), // derrota por tiempo: dura el límite
+    ]
+    const [ex] = computeExercisePerformance(sessions, 'game3')
+    expect(ex.avgDurationSeconds).toBe(60)
+    expect(ex.avgDurationPercent).toBe(50) // 1 - 60/120
+  })
+
+  it('sin ningún resultado guardado (historial anterior) usa todas las duraciones, no hay cómo separarlas', () => {
+    const sessions = [
+      session({ game: 'game3', exercise: 'CoffeeCollection', durationSeconds: 60, score: 2000 }),
+      session({ game: 'game3', exercise: 'CoffeeCollection', durationSeconds: 120, score: 300 }),
+    ]
+    const [ex] = computeExercisePerformance(sessions, 'game3')
+    expect(ex.avgDurationSeconds).toBe(90)
+    expect(ex.winRate).toBeNull()
+  })
+
+  it('calcula la tasa de victorias solo sobre los intentos con resultado conocido', () => {
+    const sessions = [win({}), win({}), win({ isWin: false }), session({ game: 'game3', exercise: 'CoffeeCollection', score: 2000 })]
+    const [ex] = computeExercisePerformance(sessions, 'game3')
+    expect(ex.wins).toBe(2)
+    expect(ex.losses).toBe(1)
+    expect(ex.winRate).toBe(67)
+  })
+
+  it('un Lavado antiguo sin scoreModel no aporta rendimiento pero sí ganó/perdió (100 = ganó, 0 = perdió)', () => {
+    const sessions = [
+      session({ game: 'game3', exercise: 'CoffeeWash', score: 100, scoreModel: null }),
+      session({ game: 'game3', exercise: 'CoffeeWash', score: 0, scoreModel: null }),
+    ]
+    const [ex] = computeExercisePerformance(sessions, 'game3')
+    expect(ex.avgScorePercent).toBeNull()
+    expect(ex.winRate).toBe(50)
+  })
+
+  it('promedia los errores y suma las acciones por brazo solo de los intentos que los miden', () => {
+    const metrics = (errors: number, left: number, right: number) => ({
+      errors,
+      leftCount: left,
+      rightCount: right,
+      wrongArm: null,
+      outOfOrder: null,
+      reTouch: null,
+      errRed: null,
+      errYellow: null,
+      errGreen: null,
+      stepsDone: null,
+      drops: null,
+      offPathSeconds: null,
+      firstActionSeconds: null,
+    })
+    const sessions = [
+      win({ metrics: metrics(1, 4, 4) }),
+      win({ metrics: metrics(2, 5, 3) }),
+      win({}), // sin métricas: no cuenta como "cero errores"
+    ]
+    const [ex] = computeExercisePerformance(sessions, 'game3')
+    expect(ex.avgErrors).toBe(1.5)
+    expect(ex.arms).toEqual({ left: 9, right: 7 })
+  })
+
+  it('ordena por timestampUtc cuando existe: dos partidas del mismo segundo no quedan en orden arbitrario', () => {
+    const sessions = [
+      win({ difficulty: 'easy', date: '2026-01-01', hour: '10:00:00', timestampUtc: '2026-01-01T15:00:00.900Z', score: 3000 }),
+      win({ difficulty: 'easy', date: '2026-01-01', hour: '10:00:00', timestampUtc: '2026-01-01T15:00:00.100Z', score: 1000 }),
+      win({ difficulty: 'easy', date: '2026-01-01', hour: '10:00:01', timestampUtc: '2026-01-01T15:00:01.100Z', score: 3000 }),
+      win({ difficulty: 'easy', date: '2026-01-01', hour: '10:00:01', timestampUtc: '2026-01-01T15:00:01.200Z', score: 3000 }),
+    ]
+    const easy = computeExerciseLevelPerformance(sessions, 'game3')[0].levels[0]
+    expect(easy.points.map((p) => p.score)).toEqual([1000, 3000, 3000, 3000])
   })
 })

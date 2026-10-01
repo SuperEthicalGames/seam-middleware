@@ -1,7 +1,7 @@
 import type { GameId, NormalizedSession } from '@/types/game'
 import { computeExercisePerformance, type PerformanceTrend } from '@/utils/exercisePerformance'
 import { formatExerciseLabel } from '@/utils/labels'
-import { formatDurationEs } from '@/utils/normalize'
+import { formatDifficultyLabel, formatDurationEs } from '@/utils/normalize'
 import { EmptyState } from './States'
 
 const TREND_META: Record<PerformanceTrend, { label: string; className: string; icon: string }> = {
@@ -19,14 +19,16 @@ export function ExercisePerformanceTable({ sessions, game }: { sessions: Normali
 
   return (
     <div className="overflow-x-auto rounded-lg border border-ink-100">
-      <table className="w-full min-w-[560px] text-left text-sm">
+      <table className="w-full min-w-[760px] text-left text-sm">
         <thead className="border-b border-ink-100 bg-ink-50/60 text-xs uppercase tracking-wide text-ink-500">
           <tr>
             <th className="px-4 py-2.5 font-medium">Ejercicio</th>
             <th className="px-4 py-2.5 font-medium">Sesiones</th>
+            <th className="px-4 py-2.5 font-medium">Resultado</th>
             <th className="px-4 py-2.5 font-medium">Rendimiento</th>
             <th className="px-4 py-2.5 font-medium">Mejor puntaje</th>
             <th className="px-4 py-2.5 font-medium">Duración prom.</th>
+            <th className="px-4 py-2.5 font-medium">Errores / brazos</th>
             <th className="px-4 py-2.5 font-medium">Tendencia</th>
           </tr>
         </thead>
@@ -38,6 +40,20 @@ export function ExercisePerformanceTable({ sessions, game }: { sessions: Normali
                 {formatExerciseLabel(r.exercise) !== r.exercise && <div className="text-xs text-ink-400">{r.exercise}</div>}
               </td>
               <td className="px-4 py-3 text-ink-700">{r.count}</td>
+              <td className="px-4 py-3">
+                {r.winRate === null ? (
+                  <span className="text-xs text-ink-400" title="Este juego no guardó si el intento se ganó o se perdió.">
+                    No registrado
+                  </span>
+                ) : (
+                  <div>
+                    <div className="text-ink-700">
+                      {r.wins} de {r.wins + r.losses} <span className="text-xs text-ink-400">({r.winRate}%)</span>
+                    </div>
+                    {r.highestLevelWon !== null && <div className="text-xs text-ink-400">Nivel más alto: {formatDifficultyLabel(r.highestLevelWon)}</div>}
+                  </div>
+                )}
+              </td>
               <td className="px-4 py-3">
                 {r.avgScorePercent === null ? (
                   <span className="text-ink-400">No disponible</span>
@@ -57,7 +73,9 @@ export function ExercisePerformanceTable({ sessions, game }: { sessions: Normali
               </td>
               <td className="px-4 py-3 text-ink-700">{r.bestScore ?? 'No disponible'}</td>
               <td className="px-4 py-3">
-                <div className="text-ink-700">{formatDurationEs(r.avgDurationSeconds)}</div>
+                <div className="text-ink-700" title={r.wins + r.losses > 0 ? 'Solo intentos ganados: una derrota por tiempo dura exactamente el límite.' : undefined}>
+                  {formatDurationEs(r.avgDurationSeconds)}
+                </div>
                 {r.avgDurationPercent !== null && (
                   <div className="mt-1 flex items-center gap-1.5" title="Velocidad respecto al tiempo de referencia de este ejercicio/dificultad — más rápido es más alto.">
                     <div className="h-1.5 w-14 overflow-hidden rounded-full bg-ink-100">
@@ -70,18 +88,35 @@ export function ExercisePerformanceTable({ sessions, game }: { sessions: Normali
                   </div>
                 )}
               </td>
+              <td className="px-4 py-3 text-xs text-ink-600">
+                {r.avgErrors === null && r.arms === null ? (
+                  <span className="text-ink-400" title="Este ejercicio no guardó errores ni brazo usado en estas sesiones.">
+                    No registrado
+                  </span>
+                ) : (
+                  <>
+                    {r.avgErrors !== null && <div>{r.avgErrors} errores por intento</div>}
+                    {r.arms !== null && (
+                      <div title="Acciones correctas hechas con cada brazo, sumadas.">
+                        Izq. {r.arms.left} · Der. {r.arms.right}
+                      </div>
+                    )}
+                  </>
+                )}
+              </td>
               <td className="px-4 py-3">
                 {r.trend === null ? (
-                  <span className="text-xs text-ink-400" title="Se necesitan al menos 4 sesiones con puntaje para estimar una tendencia.">
+                  <span className="text-xs text-ink-400" title="Se necesitan al menos 4 sesiones con puntaje en un mismo nivel para estimar una tendencia.">
                     Insuficiente
                   </span>
                 ) : (
                   <span
                     className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${TREND_META[r.trend].className}`}
-                    title="Compara el promedio de las primeras sesiones contra las más recientes de este ejercicio."
+                    title="Compara el promedio de las primeras sesiones contra las más recientes, dentro de un solo nivel de este ejercicio."
                   >
                     <span aria-hidden="true">{TREND_META[r.trend].icon}</span>
                     {TREND_META[r.trend].label}
+                    {r.trendLevel !== null && <span className="font-normal opacity-75">· {formatDifficultyLabel(r.trendLevel)}</span>}
                   </span>
                 )}
               </td>

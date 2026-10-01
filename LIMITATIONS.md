@@ -160,3 +160,44 @@ El cliente entregó una hoja de cálculo con, para cada minijuego de los 3 juego
 - Cada gráfica dibuja una sesión por punto, en orden cronológico, como % de la referencia del minijuego (`scoreReference.ts`) en escala fija 0-100 % — la misma en los 3 niveles de un minijuego, para poder compararlos entre sí. El tooltip agrega el puntaje crudo, la duración y la velocidad. Sigue siendo estadística descriptiva: el portal grafica los datos, no interpreta si hay "mejora".
 - Las sesiones sin nivel de dificultad reconocido no pertenecen a ningún nivel: no se grafican y se avisa cuántas son. Las sesiones sin puntaje cuentan en el total de su nivel pero no generan punto. El PDF replica las mismas gráficas (`drawLevelChart` en `src/reports/pdfCharts.ts`) en lugar de la línea de progreso combinada. El Dashboard (agregado de toda la población) no cambió.
 - Vocabulario: el portal dice "usuario" (antes "paciente") en la interfaz, en los mensajes, en la documentación y en la ruta del perfil, que ahora es `#/usuario/:id`. Los enlaces guardados con la ruta vieja (`#/paciente/:id`) redirigen a la nueva (`LegacyUserRedirect` en `src/App.tsx`). Los nombres internos en inglés (`PatientProfile`, `patientStats`, etc.) no cambiaron.
+
+## 14. Análisis por nivel, resultado y errores; conclusiones sin ranking entre ejercicios (2026-09-25)
+
+Auditoría del análisis de rendimiento contra las fórmulas reales del juego (`ScoreController.cs`, módulos de Cafetero y sus `Coffee * settings.asset`). Tres defectos reales, todos reproducidos con las funciones del portal antes de corregirlos:
+
+- **La tendencia mezclaba niveles.** En Recolección y Clasificación el puntaje es `(1000 + 20 × segundos que sobran) × fracción completada` y el límite de tiempo baja con el nivel (Recolección 120/100/80 s, Clasificación 90/60/40 s), así que el máximo también baja: 3400/3000/2600 y 2800/2200/1800. Un usuario que gana más rápido y sube de nivel salía "estable" o "disminuyendo". Ahora `computeExercisePerformance` calcula la tendencia dentro de UN nivel (el de más sesiones con puntaje, mínimo 4) y dice cuál (`trendLevel`).
+- **El % de rendimiento se recortaba y usaba referencias obsoletas.** Lavado tenía referencia 100 porque sus datos reales eran 0 o 100 (un bug del juego: todo toque correcto contaba como falta). Con el juego corregido, Lavado puntúa `1000 − 50 × faltas`, y todo lo mayor a 100 se recortaba al 100 %. `sessionScorePercent` mide cada sesión contra el máximo de SU minijuego y SU nivel, sale de las fórmulas del juego y no de percentiles de datos viejos. Las estrellas estimadas de Cafetero siguen usando `scoreToPercent` (referencia p90) sin cambios, porque son una presentación pedida por el cliente.
+- **"Mejor / peor ejercicio" comparaba tareas distintas.** Una victoria mínima de Lavado (100 puntos) salía como el ejercicio más fuerte del usuario. Se quitó esa comparación de las conclusiones, del PDF y de la UI: cada ejercicio se resume contra su propio historial (tasa de victorias, nivel más alto ganado, tendencia con su nivel). El Dashboard sigue mostrando el promedio por ejercicio de la población, ahora con el % por nivel, pero no dice "más fuerte/débil" de nadie.
+
+**Lo que ahora se usa del dato del juego** (antes se ignoraba): `isWin`, `timeSeconds`, `timestampUtc`, `scoreModel` y las métricas de intento. La duración promedio y la velocidad cuentan solo las victorias cuando se conoce el resultado: una derrota por tiempo dura exactamente el límite y bajaba el promedio sin que el usuario fuera más lento.
+
+**Historial anterior (sin `isWin` ni `scoreModel`):** nada se inventa.
+- Lavado antiguo: no aporta rendimiento (valía 100 en toda victoria), pero sí ganó/perdió (100 = ganó, 0 = perdió), porque el código del juego lo dejaba binario. Lo mismo para Transporte (mínimo 100 al ganar) y Elaboración (1000 o 0).
+- Recolección y Clasificación antiguas: el resultado queda desconocido, porque una derrota también da puntaje parcial. Si TODO el historial de un ejercicio está sin resultado, la duración promedio usa todas las sesiones, como antes.
+
+**Pendiente, fuera del alcance de este cambio:**
+- **Las Rules de `seam-data-game` siguen abiertas.** El 2026-09-25 un GET sin credenciales a `users`, `identificators` y `serials` devolvió 200 (solo el código de estado, sin leer datos), y las reglas publicadas que el cliente pegó tienen `".read": "true"` en los tres. Esto contradice la sección 1 de este documento (401 el 21-sep). `game-database-rules/cafetero.rules.json` (`auth != null` para todo) tampoco protege: cualquiera con la apiKey pública puede iniciar sesión anónima. El archivo `firebase/database.rules.json` del repositorio del juego (cada paciente solo lo suyo) sí protege, pero el portal no podría leer `users` con él sin una cuenta de lectura por proyecto de juego.
+- El cambio sin commitear en `src/firebase/game3.ts` activa `signInAnonymously` contra `seam-data-game`: si el proveedor Anónimo no está habilitado en ese proyecto, Cafetero mostrará error en el portal aunque las reglas estén abiertas.
+- Dashboard y Directorio siguen descargando todos los usuarios con todo su historial en cada carga. Aceptable con decenas de usuarios, no con cientos.
+- `bundleVersion` de la app sigue en 1.2.3: `appVersion` no distingue compilaciones. `scoreModel` sí distingue el significado del puntaje.
+
+## 13. Acceso por serial de equipo en el Juego 3 y conexión del portal con Cafetero (2026-09-30)
+Cada visor del Juego 3 registra su serial solo: `identificators/gameNN = serial` y `serials/{serial} = false` (un visor nuevo nace **sin acceso**). Desde **Seriales** el administrador pasa el valor a `true`/`false`; el portal muestra el `gameNN` del equipo en la columna "Equipo". Los datos anteriores (1/0 y claves hash) se siguen mostrando y al cambiarlos se conserva su tipo numérico; la auditoría guarda siempre 1/0.
+
+### Qué se rompió al publicar las Rules nuevas, y cómo está reparado
+Las Rules nuevas de `seam-data-game` dejan leer `users`, `identificators` y la lista de `serials` **solo a las cuentas de `admins/{uid}`**. La versión del portal que estaba publicada en `main` seguía con la configuración de relleno de Cafetero (`PENDIENTE_...`), así que no iniciaba sesión de ningún tipo y leía sin autenticar: la base respondía "permiso denegado" y el portal mostraba "No fue posible consultar: Cafetero".
+
+La reparación (rama `analisis-por-nivel-y-resultado`):
+- El portal inicia sesión en `seam-data-game` con **el mismo correo y contraseña** con que el administrador entra al portal (`AuthContext.signIn` -> `connectGame3Admin`), y comprueba que figure en `admins/{uid}`.
+- Si algo falta, un aviso en pantalla (`Game3Banner`) dice **qué** falta (sin sesión, la cuenta no existe, la cuenta no está en `admins` con su UID, sin red...) y deja reconectar escribiendo la contraseña, sin cerrar sesión. Las páginas que consultan Cafetero muestran ese mismo motivo en vez del error genérico.
+- Se probó el adaptador contra las Rules reales en el emulador (`npm run test:rules`): como administrador lista usuarios y seriales y activa/desactiva; como anónimo o sin sesión las Rules rechazan todo.
+
+### Pasos por cada administrador (una sola vez, en la consola de Firebase de `seam-data-game`; el portal no puede hacerlos por sí solo)
+1. *Authentication -> Users -> Add user*: el **mismo correo y contraseña** que usa en el portal.
+2. Copiar el **UID** de esa cuenta y crear en *Realtime Database* el nodo `admins/{UID} = true` (booleano).
+3. Entrar al portal (o usar "Conectar Cafetero" si ya había una sesión abierta).
+4. Las contraseñas de las dos bases no se sincronizan: si el administrador cambia la suya en el portal, debe cambiarla también en la base de Cafetero (y usar "Conectar Cafetero" una vez).
+
+Además, para el control de acceso por serial: habilitar el inicio de sesión **Anónimo** en `seam-data-game` (ya está habilitado) y publicar `game-database-rules/cafetero.rules.json` (copia de `firebase/database.rules.json` del repositorio del juego).
+
+Limitación: el serial lo declara el visor, así que quien conozca el de un equipo activo podría presentarlo desde otro con la app modificada. El bloqueo por serial lo hace cumplir la app; las Rules solo impiden que un visor se active, borre o liste a los demás.

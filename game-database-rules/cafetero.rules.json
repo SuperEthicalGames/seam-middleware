@@ -1,20 +1,95 @@
 {
   "rules": {
-    "identificators": {
-      ".read": "auth != null",
-      ".write": "auth != null"
-    },
-    "serials": {
-      ".read": "auth != null",
-      ".write": "auth != null"
-    },
+    ".read": false,
+    ".write": false,
+
     "users": {
-      ".read": "auth != null",
-      ".write": "auth != null"
+      ".read": "auth != null && root.child('admins').child(auth.uid).val() === true",
+
+      "$uid": {
+        ".read": "auth != null && (auth.uid === $uid || root.child('admins').child(auth.uid).val() === true)",
+        ".write": "auth != null && auth.uid === $uid",
+
+        "CC": {
+          ".validate": "newData.isString() && newData.val().matches(/^[A-Za-z0-9._-]{4,30}$/) && auth.token.email === newData.val().toLowerCase() + '@example.com'"
+        },
+
+        "results": {
+          "$gameId": {
+            ".validate": "$gameId.matches(/^game[0-9]{2,6}$/)",
+
+            "score":        { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100000" },
+            "time":         { ".validate": "newData.isString() && newData.val().length <= 30" },
+            "timeSeconds":  { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 7200" },
+            "difficulty":   { ".validate": "newData.isString() && (newData.val() === 'Easy' || newData.val() === 'Medium' || newData.val() === 'Hard')" },
+            "experience":   { ".validate": "newData.isString() && newData.val().matches(/^Coffee(Collection|Transportation|Classification|Wash|Elaboration)$/)" },
+            "date":         { ".validate": "newData.isString() && newData.val().length <= 10" },
+            "hour":         { ".validate": "newData.isString() && newData.val().length <= 8" },
+            "timestampUtc": { ".validate": "newData.isString() && newData.val().length <= 40" },
+            "appVersion":   { ".validate": "newData.isString() && newData.val().length <= 20" },
+            "recordId":     { ".validate": "newData.isString() && newData.val().length <= 40" },
+            "isWin":        { ".validate": "newData.isBoolean()" },
+
+            "scoreModel":      { ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 99" },
+            "sessionId":       { ".validate": "newData.isString() && newData.val().length <= 40" },
+            "attempt":         { ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 1000" },
+            "device":          { ".validate": "newData.isString() && newData.val().length <= 60" },
+            "serverTimestamp": { ".validate": "newData.isNumber()" },
+
+            "errors":          { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 10000" },
+            "leftCount":       { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 10000" },
+            "rightCount":      { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 10000" },
+            "wrongArm":        { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 10000" },
+            "outOfOrder":      { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 10000" },
+            "reTouch":         { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 10000" },
+            "errRed":          { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 10000" },
+            "errYellow":       { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 10000" },
+            "errGreen":        { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 10000" },
+            "stepsDone":       { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100" },
+            "drops":           { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 10000" },
+            "offPathSeconds":  { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 7200" },
+            "firstActionSeconds": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 7200" },
+
+            "$other": { ".validate": false }
+          }
+        },
+
+        "$other": { ".validate": false }
+      }
     },
-    "$other": {
+
+    "admins": {
       ".read": false,
-      ".write": false
+      ".write": false,
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid"
+      }
+    },
+
+    "identificators": {
+      ".read": "auth != null && root.child('admins').child(auth.uid).val() === true",
+
+      "$key": {
+        ".write": "auth != null && (root.child('admins').child(auth.uid).val() === true || (!data.exists() && $key.matches(/^game[0-9]{2,6}$/)))",
+        ".validate": "newData.isString() && newData.val().matches(/^[A-Za-z0-9]{16,64}$/)"
+      }
+    },
+
+    "serials": {
+      ".read": "auth != null && root.child('admins').child(auth.uid).val() === true",
+
+      "$serial": {
+        ".read": "auth != null",
+        ".write": "auth != null && (root.child('admins').child(auth.uid).val() === true || (!data.exists() && newData.val() === false))",
+        ".validate": "$serial.matches(/^[A-Za-z0-9]{16,64}$/) && (newData.isBoolean() || newData.val() === 0 || newData.val() === 1)"
+      }
+    },
+
+    "meta": {
+      "nextDeviceIndex": {
+        ".read": "auth != null",
+        ".write": "auth != null && (root.child('admins').child(auth.uid).val() === true || (newData.isNumber() && newData.val() <= 99999 && newData.val() === (data.exists() ? data.val() + 1 : 1)))"
+      }
     }
   }
 }

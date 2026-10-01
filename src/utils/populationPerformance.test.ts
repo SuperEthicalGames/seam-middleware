@@ -17,6 +17,13 @@ function session(overrides: Partial<NormalizedSession>): NormalizedSession {
     stars: 3,
     durationSeconds: 60,
     durationRaw: '1:00 seconds',
+    isWin: null,
+    timestampUtc: null,
+    scoreModel: null,
+    sessionId: null,
+    attempt: null,
+    device: null,
+    metrics: null,
     ...overrides,
   }
 }
@@ -84,13 +91,25 @@ describe('computePerformanceDistribution', () => {
     expect(computePerformanceDistribution(byGame)).toEqual({ bajo: 1, medio: 1, alto: 1 })
   })
 
-  it('respeta la referencia propia de cada minijuego de Cafetero al clasificar', () => {
+  it('mide cada sesión de Cafetero contra el máximo de su minijuego y su nivel al clasificar', () => {
     const byGame: Record<GameId, NormalizedSession[]> = {
       game1: [],
       game2: [],
       game3: [
-        session({ game: 'game3', exercise: 'CoffeeElaboration', score: 1000 }), // 100% -> alto
-        session({ game: 'game3', exercise: 'CoffeeClassification', score: 1000 }), // 40% -> medio
+        session({ game: 'game3', exercise: 'CoffeeElaboration', score: 1000 }), // 1000/1000 = 100% -> alto
+        session({ game: 'game3', exercise: 'CoffeeClassification', difficulty: 'easy', score: 1000 }), // 1000/2800 = 36% -> bajo
+      ],
+    }
+    expect(computePerformanceDistribution(byGame)).toEqual({ bajo: 1, medio: 0, alto: 1 })
+  })
+
+  it('la misma puntuación cae en otra banda según el nivel, porque el máximo baja con el nivel', () => {
+    const byGame: Record<GameId, NormalizedSession[]> = {
+      game1: [],
+      game2: [],
+      game3: [
+        session({ game: 'game3', exercise: 'CoffeeClassification', difficulty: 'easy', score: 1900 }), // 1900/2800 = 68% -> medio
+        session({ game: 'game3', exercise: 'CoffeeClassification', difficulty: 'hard', score: 1900 }), // 1900/1800 -> 100% -> alto
       ],
     }
     expect(computePerformanceDistribution(byGame)).toEqual({ bajo: 0, medio: 1, alto: 1 })

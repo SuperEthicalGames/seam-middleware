@@ -1,7 +1,6 @@
 import { get, ref, update } from 'firebase/database'
 import { ensureGame3Auth, game3Db } from '@/firebase/game3'
-import type { G3User } from '@/types/game'
-import type { NormalizedSerial, NormalizedSession, NormalizedUser } from '@/types/game'
+import type { G3User, NormalizedSerial, NormalizedSession, NormalizedUser, RawSerialValue } from '@/types/game'
 import type { GameAdapter, SerialToggleResult } from './types'
 import { normalizeG3Sessions, normalizeG3User } from './g3Normalize'
 import { PortalError } from '@/utils/errors'
@@ -38,15 +37,32 @@ export class Game3Adapter implements GameAdapter {
     return normalizeG3Sessions(uid, raw)
   }
 
+  /**
+   * Cada visor se registra solo (ver DeviceAccess.cs en el juego): `identificators/gameNN`
+   * guarda su serial y `serials/{serial}` es `false` hasta que un administrador lo activa.
+   * Los datos anteriores a este sistema usan 1/0, por eso ambos valores se aceptan.
+   * La etiqueta (gameNN) sale de `identificators`; un serial sin entrada ahí queda sin etiqueta.
+   */
   async getSerials(): Promise<NormalizedSerial[]> {
     await ensureGame3Auth()
-    const snap = await get(ref(game3Db, 'serials'))
-    const val = (snap.val() ?? {}) as Record<string, 0 | 1>
-    return Object.entries(val).map(([code, rawValue]) => ({
+    const [serialsSnap, identificatorsSnap] = await Promise.all([
+      get(ref(game3Db, 'serials')),
+      get(ref(game3Db, 'identificators')),
+    ])
+    const serials = (serialsSnap.val() ?? {}) as Record<string, RawSerialValue>
+    const identificators = (identificatorsSnap.val() ?? {}) as Record<string, unknown>
+
+    const labelBySerial = new Map<string, string>()
+    for (const [key, value] of Object.entries(identificators)) {
+      if (typeof value === 'string' && !labelBySerial.has(value)) labelBySerial.set(value, key)
+    }
+
+    return Object.entries(serials).map(([code, rawValue]) => ({
       game: this.gameId,
       code,
-      active: rawValue === 1,
+      active: rawValue === true || rawValue === 1,
       rawValue,
+      label: labelBySerial.get(code),
     }))
   }
 
@@ -57,10 +73,12 @@ export class Game3Adapter implements GameAdapter {
     if (!current.exists()) {
       throw new PortalError('El serial indicado no existe en este juego.')
     }
-    const previousValue = current.val() as 0 | 1
-    const newValue: 0 | 1 = active ? 1 : 0
-    await update(ref(game3Db), { [`serials/${code}`]: newValue })
-    return { code, previousValue, newValue }
+    const previous = current.val() as RawSerialValue
+    // Se respeta el tipo que ya tenía (datos antiguos con 1/0); los equipos nuevos usan true/false.
+    const written: RawSerialValue = typeof previous === 'number' ? (active ? 1 : 0) : active
+    await update(ref(game3Db), { [`serials/${code}`]: written })
+    // La auditoría guarda siempre 1/0, sin importar cómo lo guarde cada juego.
+    return { code, previousValue: previous === true || previous === 1 ? 1 : 0, newValue: active ? 1 : 0 }
   }
 }
 
