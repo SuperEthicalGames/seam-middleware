@@ -3,7 +3,7 @@ import { useAsync } from '@/hooks/useAsync'
 import { getAllAdmins, createNewAdmin, revokeAdmin, changeAdminRole } from '@/services/AdminService'
 import { Card } from '@/components/Card'
 import { GameAccessRequests } from '@/components/GameAccessRequests'
-import type { ProvisionOutcome } from '@/services/GameAdminService'
+import { syncAdminsToGames, type ProvisionOutcome } from '@/services/GameAdminService'
 import { DataTable, type Column } from '@/components/DataTable'
 import { Badge } from '@/components/Badge'
 import { Modal, ConfirmDialog } from '@/components/Modal'
@@ -36,6 +36,8 @@ export function Admins() {
   const [creating, setCreating] = useState(false)
   const [newCredentials, setNewCredentials] = useState<NewAdminCredentials | null>(null)
 
+  const [syncing, setSyncing] = useState(false)
+
   const [pendingRevoke, setPendingRevoke] = useState<AdminProfile | null>(null)
   const [revoking, setRevoking] = useState(false)
 
@@ -67,6 +69,21 @@ export function Admins() {
       showToast('error', toFriendlyMessage(err))
     } finally {
       setCreating(false)
+    }
+  }
+
+  async function handleSync() {
+    setSyncing(true)
+    try {
+      const outcomes = await syncAdminsToGames(data ?? [])
+      const synced = outcomes.reduce((n, o) => n + o.synced, 0)
+      showToast(synced > 0 ? 'success' : 'info', synced > 0 ? `Sincronizado: ${synced} altas en los juegos.` : 'No había altas que sincronizar.')
+      for (const outcome of outcomes.filter((o) => o.message)) showToast('info', outcome.message!)
+      reload()
+    } catch (err) {
+      showToast('error', toFriendlyMessage(err))
+    } finally {
+      setSyncing(false)
     }
   }
 
@@ -114,6 +131,7 @@ export function Admins() {
       const result = await changeAdminRole({
         targetUid: pendingRoleChange.uid,
         targetEmail: pendingRoleChange.email,
+        gameUids: pendingRoleChange.gameUids,
         previousRole: pendingRoleChange.role,
         newRole,
         changedByUid: user.uid,
@@ -124,6 +142,7 @@ export function Admins() {
       } else {
         showToast('info', `Rol de ${pendingRoleChange.email} actualizado, pero no se pudo registrar en la auditoría.`)
       }
+      for (const game of result.games.filter((g) => !g.ok)) showToast('info', game.message ?? `${game.displayName}: no se pudo cambiar el rol.`)
       setPendingRoleChange(null)
       reload()
     } catch (err) {
@@ -190,9 +209,14 @@ export function Admins() {
           </p>
         </div>
         {isOwner && (
-          <button type="button" className="btn-primary" onClick={() => setShowCreate(true)}>
-            Crear administrador
-          </button>
+          <div className="flex flex-wrap gap-2">
+            <button type="button" className="btn-secondary" onClick={handleSync} disabled={syncing} title="Completa las altas en los juegos que quedaron pendientes">
+              {syncing ? 'Sincronizando...' : 'Sincronizar con los juegos'}
+            </button>
+            <button type="button" className="btn-primary" onClick={() => setShowCreate(true)}>
+              Crear administrador
+            </button>
+          </div>
         )}
       </Card>
       {isOwner && <GameAccessRequests />}

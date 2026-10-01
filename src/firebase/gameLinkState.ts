@@ -4,7 +4,7 @@
  * administrador real allí (no una anónima). Este archivo solo clasifica el resultado, para decirle al administrador qué falta, en palabras
  * claras. Es el mismo para los tres juegos: solo cambia el nombre.
  */
-export type GameLinkStatus = 'checking' | 'connected' | 'no-session' | 'no-account' | 'password-mismatch' | 'not-admin' | 'pending' | 'error'
+export type GameLinkStatus = 'checking' | 'connected' | 'no-session' | 'no-account' | 'password-mismatch' | 'verify-email' | 'not-admin' | 'pending' | 'error'
 
 export interface GameLinkState {
   status: GameLinkStatus
@@ -31,6 +31,15 @@ export function passwordMismatchState(name: string): GameLinkState {
   return {
     status: 'password-mismatch',
     message: `Ya existe una cuenta con su correo en ${name}, pero con otra contraseña (por ejemplo, si restableció la del portal). Restablézcala desde el correo que se le envía y use la misma contraseña del portal.`,
+  }
+}
+
+/** La cuenta raíz ya existe pero Firebase aún no confirmó que el correo es suyo: sin eso las Rules no la dejan hacerse propietaria */
+export function verifyEmailState(name: string, email: string, uid?: string): GameLinkState {
+  return {
+    status: 'verify-email',
+    message: `Falta confirmar su correo para quedar como propietario de ${name}: se envió un enlace a ${email}. Ábralo y luego pulse «Comprobar de nuevo».`,
+    uid,
   }
 }
 
@@ -89,4 +98,17 @@ export function describeSignInError(name: string, error: unknown): GameLinkState
     return errorState(`El inicio de sesión con correo y contraseña no está habilitado en la base de ${name}.`)
   }
   return errorState(`No se pudo conectar con ${name} (${code || 'error desconocido'}).`)
+}
+
+/**
+ * Qué estados de enlace se le muestran al administrador. De un juego que ya exige sesión de administrador para leer se muestra todo. De uno que todavía
+ * no la exige (sus Rules aún no tienen la capa de administradores) solo lo que puede resolver ya: confirmar su correo para quedar como propietario;
+ * lo demás (altas, solicitudes) se completa solo, o con "Sincronizar con los juegos", cuando esas Rules se publiquen.
+ */
+export function visibleGameStates<K extends string>(all: Partial<Record<K, GameLinkState>>, requiresAdmin: (game: K) => boolean): Partial<Record<K, GameLinkState>> {
+  const visible: Partial<Record<K, GameLinkState>> = {}
+  for (const [game, state] of Object.entries(all) as [K, GameLinkState][]) {
+    if (requiresAdmin(game) || state.status === 'verify-email') visible[game] = state
+  }
+  return visible
 }

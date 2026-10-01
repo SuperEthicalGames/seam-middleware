@@ -9,7 +9,7 @@ import {
 } from 'firebase/auth'
 import { centralAuth } from '@/firebase/central'
 import { GAME_LINKS, adminGameLinks } from '@/firebase/gameLinks'
-import { checkingState, noSessionState, type GameLinkState } from '@/firebase/gameLinkState'
+import { checkingState, noSessionState, visibleGameStates, type GameLinkState } from '@/firebase/gameLinkState'
 import { clearMustChangePassword, ensureAdminProfile } from '@/services/AdminService'
 import { updateGamePasswords } from '@/services/GameAdminService'
 import type { AdminProfile } from '@/types/central'
@@ -23,7 +23,10 @@ interface AuthContextValue {
   user: User | null
   profile: AdminProfile | null
   loading: boolean
-  /** Para cada juego que exige administradores (hoy Cafetero): sesión de administrador allí y figurar en `admins` */
+  /**
+   * Lo que el administrador tiene que ver o resolver, por juego. De los juegos que exigen administrador para leer (hoy Cafetero) se muestra todo; de los demás
+   * solo si falta confirmar el correo para quedar como propietario (lo demás se resuelve solo cuando sus Rules tengan la capa de administradores).
+   */
   games: GameLinkStates
   /** Conecta con la contraseña del administrador los juegos que falten (por ejemplo si la sesión se abrió antes, o la contraseña cambió) */
   connectGames: (password: string) => Promise<void>
@@ -31,6 +34,8 @@ interface AuthContextValue {
   refreshGames: () => Promise<void>
   /** Envía al correo el enlace para restablecer la contraseña de la cuenta en la base de un juego */
   resetGamePassword: (game: GameId) => Promise<boolean>
+  /** Vuelve a enviar el correo de confirmación de la cuenta en la base de un juego */
+  resendGameVerification: (game: GameId) => Promise<boolean>
   /** Pide acceso de administrador en un juego (crea la cuenta del juego si hace falta). Un propietario de ese juego debe aprobarlo */
   requestGameAccess: (game: GameId, password?: string) => Promise<GameLinkState>
   signIn: (email: string, password: string) => Promise<void>
@@ -54,7 +59,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [profile, setProfile] = useState<AdminProfile | null>(null)
   const [loading, setLoading] = useState(true)
-  const [games, setGames] = useState<GameLinkStates>(() => statesOf(checkingState))
+  const [allGames, setGames] = useState<GameLinkStates>(() => statesOf(checkingState))
+  const games = useMemo(() => visibleGameStates(allGames, (game) => GAME_LINKS[game].requiresAdmin), [allGames])
 
   function setGame(game: GameId, state: GameLinkState) {
     setGames((prev) => ({ ...prev, [game]: state }))
@@ -112,6 +118,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             }
           }),
         )
+      },
+      async resendGameVerification(game) {
+        return GAME_LINKS[game].resendVerification()
       },
       async resetGamePassword(game) {
         const email = centralAuth.currentUser?.email

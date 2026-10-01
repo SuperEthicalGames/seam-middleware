@@ -12,7 +12,7 @@ type PasswordAction = { game: GameId; mode: 'connect' | 'create' }
  * conectar con la contraseña, o crear la cuenta del juego y pedir acceso (un propietario de ese juego lo aprueba en Administradores).
  */
 export function GameLinksBanner() {
-  const { games, connectGames, requestGameAccess, refreshGames, resetGamePassword, user } = useAuth()
+  const { games, connectGames, requestGameAccess, refreshGames, resetGamePassword, resendGameVerification, user } = useAuth()
   const { showToast } = useToast()
   const [action, setAction] = useState<PasswordAction | null>(null)
   const [password, setPassword] = useState('')
@@ -46,6 +46,16 @@ export function GameLinksBanner() {
     setBusy(true)
     try {
       await refreshGames()
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function resend(game: GameId) {
+    setBusy(true)
+    try {
+      const sent = await resendGameVerification(game)
+      showToast(sent ? 'success' : 'error', sent ? `Le enviamos de nuevo el correo de confirmación a ${user?.email}.` : 'No se pudo enviar el correo. Intente de nuevo en unos minutos.')
     } finally {
       setBusy(false)
     }
@@ -108,7 +118,12 @@ export function GameLinksBanner() {
                 Solicitar acceso
               </button>
             )}
-            {(state.status === 'not-admin' || state.status === 'pending' || state.status === 'error') && (
+            {state.status === 'verify-email' && (
+              <button type="button" className="btn-secondary" disabled={busy} onClick={() => resend(game)}>
+                Reenviar correo
+              </button>
+            )}
+            {(state.status === 'not-admin' || state.status === 'pending' || state.status === 'error' || state.status === 'verify-email') && (
               <button type="button" className="btn-secondary" disabled={busy} onClick={recheck}>
                 Comprobar de nuevo
               </button>

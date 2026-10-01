@@ -59,10 +59,12 @@
     },
 
     "owners": {
-      ".read": false,
-      ".write": false,
+      ".read": "auth != null && root.child('owners').child(auth.uid).val() === true",
+
       "$uid": {
-        ".read": "auth != null && auth.uid === $uid"
+        ".read": "auth != null && (auth.uid === $uid || root.child('owners').child(auth.uid).val() === true)",
+        ".write": "auth != null && (root.child('owners').child(auth.uid).val() === true || (auth.uid === $uid && !data.exists() && auth.token.email_verified === true && auth.token.email === 'superethicalgames@gmail.com'))",
+        ".validate": "newData.val() === true"
       }
     },
 
