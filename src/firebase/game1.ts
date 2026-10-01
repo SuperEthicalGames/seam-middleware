@@ -1,6 +1,8 @@
 import { initializeApp } from 'firebase/app'
 import { getDatabase } from 'firebase/database'
 import { createAnonAuthGate } from './anonAuthGate'
+import { createGameLink } from './gameLink'
+import { GAME_REQUIRES_ADMIN } from '@/config/games'
 
 /**
  * Firebase del Juego 1 — Amazonas (seam-data-as). Sistema EXISTENTE de la app de
@@ -17,7 +19,7 @@ import { createAnonAuthGate } from './anonAuthGate'
  * ya inicia sesión anónima antes de tocar la base — listo para cuando se publiquen
  * Rules que exijan `auth != null`.
  */
-const GAME1_FIREBASE_CONFIG = {
+export const GAME1_FIREBASE_CONFIG = {
   apiKey: 'PENDIENTE_apiKey_real_de_seam-data-as',
   authDomain: 'PENDIENTE_authDomain_real_de_seam-data-as',
   projectId: 'PENDIENTE_projectId_real_de_seam-data-as',
@@ -29,3 +31,18 @@ const HAS_REAL_CONFIG = !GAME1_FIREBASE_CONFIG.apiKey.startsWith('PENDIENTE_')
 export const game1App = initializeApp(GAME1_FIREBASE_CONFIG, 'game1')
 export const game1Db = getDatabase(game1App)
 export const ensureGame1Auth = createAnonAuthGate(game1App, HAS_REAL_CONFIG)
+
+/**
+ * Enlace de administrador de Amazonas. `requiresAdmin` sigue en false (`GAME_REQUIRES_ADMIN`): mientras las Rules de este proyecto sean las actuales (`auth != null`)
+ * el portal lo consulta con la sesión anónima de arriba y no pide ninguna conexión extra. Cuando se publiquen las Rules con la capa de
+ * administradores (game-database-rules/*.rules.json) y la configuración de arriba sea la real, cambiar a true en `GAME_REQUIRES_ADMIN` (src/config/games.ts).
+ */
+export const game1Link = createGameLink({
+  gameId: 'game1',
+  displayName: 'Amazonas',
+  app: game1App,
+  db: game1Db,
+  firebaseConfig: GAME1_FIREBASE_CONFIG,
+  hasRealConfig: HAS_REAL_CONFIG,
+  requiresAdmin: GAME_REQUIRES_ADMIN.game1,
+})

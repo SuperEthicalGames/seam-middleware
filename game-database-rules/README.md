@@ -41,3 +41,7 @@ podría leer ni activar seriales.
 Publicar cualquiera de estos archivos antes del paso 1–4 completo para ese juego
 específico corta el acceso a usuarios reales en plena sesión de fisioterapia. No
 publicar sin haber confirmado el paso 4.
+
+## Capa de administradores (los tres archivos)
+
+Los tres archivos incluyen, idénticos, `owners`, `admins` y `adminRequests`: quién puede leer cada juego desde el portal y cómo se da de alta. Una prueba (`src/config/rulesLayer.test.ts`) falla si un archivo cambia y los otros no, y `npm run test:rules` (emulador, Java 17+) la ejecuta contra las tres. Por sí sola la capa **no cierra** `users`, `serials` ni `identificators` en Amazonas y Cartagena: siguen en `auth != null` hasta que sus aplicaciones estén listas (el orden obligatorio de arriba). Detalle de uso y activación en `LIMITATIONS.md` sección 13.

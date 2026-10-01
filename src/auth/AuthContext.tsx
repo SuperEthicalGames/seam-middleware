@@ -8,40 +8,65 @@ import {
   type User,
 } from 'firebase/auth'
 import { centralAuth } from '@/firebase/central'
-import { checkGame3Link, connectGame3Admin, signOutGame3 } from '@/firebase/game3'
-import { GAME3_CHECKING, GAME3_NO_SESSION, type Game3Link } from '@/firebase/game3Link'
+import { GAME_LINKS, adminGameLinks } from '@/firebase/gameLinks'
+import { checkingState, noSessionState, type GameLinkState } from '@/firebase/gameLinkState'
 import { clearMustChangePassword, ensureAdminProfile } from '@/services/AdminService'
+import { updateGamePasswords } from '@/services/GameAdminService'
 import type { AdminProfile } from '@/types/central'
+import type { GameId } from '@/types/game'
 import { toFriendlyMessage } from '@/utils/errors'
+
+/** Estado del enlace con la base de cada juego cuyas Rules ya exigen una sesión de administrador */
+export type GameLinkStates = Partial<Record<GameId, GameLinkState>>
 
 interface AuthContextValue {
   user: User | null
   profile: AdminProfile | null
   loading: boolean
-  /** Enlace del portal con la base de Cafetero: sesión de administrador allí y figurar en `admins` */
-  game3: Game3Link
-  /** Conecta Cafetero con la contraseña del administrador (por ejemplo si la sesión se abrió antes de existir este enlace) */
-  connectGame3: (password: string) => Promise<Game3Link>
+  /** Para cada juego que exige administradores (hoy Cafetero): sesión de administrador allí y figurar en `admins` */
+  games: GameLinkStates
+  /** Conecta con la contraseña del administrador los juegos que falten (por ejemplo si la sesión se abrió antes, o la contraseña cambió) */
+  connectGames: (password: string) => Promise<void>
+  /** Pide acceso de administrador en un juego (crea la cuenta del juego si hace falta). Un propietario de ese juego debe aprobarlo */
+  requestGameAccess: (game: GameId, password?: string) => Promise<GameLinkState>
   signIn: (email: string, password: string) => Promise<void>
   signOut: () => Promise<void>
   resetPassword: (email: string) => Promise<void>
-  changePassword: (newPassword: string) => Promise<void>
+  /** Devuelve los juegos donde no se pudo actualizar la contraseña (la del portal sí quedó cambiada) */
+  changePassword: (newPassword: string) => Promise<{ gamesNotUpdated: string[] }>
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
+
+const links = adminGameLinks()
+
+function statesOf(make: (name: string) => GameLinkState): GameLinkStates {
+  const states: GameLinkStates = {}
+  for (const link of links) states[link.gameId] = make(link.displayName)
+  return states
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [profile, setProfile] = useState<AdminProfile | null>(null)
   const [loading, setLoading] = useState(true)
-  const [game3, setGame3] = useState<Game3Link>(GAME3_CHECKING)
+  const [games, setGames] = useState<GameLinkStates>(() => statesOf(checkingState))
+
+  function setGame(game: GameId, state: GameLinkState) {
+    setGames((prev) => ({ ...prev, [game]: state }))
+  }
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(centralAuth, async (firebaseUser) => {
       setUser(firebaseUser)
       if (firebaseUser) {
-        // Una sesión que se restaura al recargar la página ya trae su sesión de Cafetero guardada por Firebase: solo se comprueba
-        checkGame3Link().then(setGame3, () => setGame3(GAME3_NO_SESSION))
+        // Una sesión que se restaura al recargar la página ya trae guardadas sus sesiones de los juegos: solo se comprueban
+        for (const link of links) {
+          link.check().then(
+            (state) => setGame(link.gameId, state),
+            () => setGame(link.gameId, noSessionState(link.displayName)),
+          )
+        }
         try {
           const p = await ensureAdminProfile(firebaseUser)
           setProfile(p)
@@ -50,26 +75,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       } else {
         setProfile(null)
-        setGame3(GAME3_NO_SESSION)
+        setGames(statesOf(noSessionState))
       }
       setLoading(false)
     })
     return unsubscribe
   }, [])
 
-  const value = useMemo<AuthContextValue>(
-    () => ({
+  const value = useMemo<AuthContextValue>(() => {
+    async function connectAll(email: string, password: string) {
+      setGames(statesOf(checkingState))
+      await Promise.all(links.map(async (link) => setGame(link.gameId, await link.connect(email, password))))
+    }
+
+    return {
       user,
       profile,
       loading,
-      game3,
-      async connectGame3(password) {
+      games,
+      async connectGames(password) {
         const email = centralAuth.currentUser?.email
-        if (!email) return GAME3_NO_SESSION
-        setGame3(GAME3_CHECKING)
-        const link = await connectGame3Admin(email, password)
-        setGame3(link)
-        return link
+        if (!email) return
+        await connectAll(email, password)
+      },
+      async requestGameAccess(game, password) {
+        const link = GAME_LINKS[game]
+        const email = centralAuth.currentUser?.email
+        setGame(game, checkingState(link.displayName))
+        const state = await link.requestAccess(email && password ? { email, password } : undefined)
+        setGame(game, state)
+        return state
       },
       async signIn(email, password) {
         try {
@@ -77,14 +112,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         } catch (error) {
           throw new Error(toFriendlyMessage(error))
         }
-        // El Juego 3 exige un administrador real en su propia base (no hay sesión anónima): se entra con las mismas credenciales.
-        // Si esa cuenta no existe allí el portal sigue funcionando; solo el Juego 3 mostrará el aviso correspondiente.
-        setGame3(GAME3_CHECKING)
-        setGame3(await connectGame3Admin(email, password))
+        // Los juegos que exigen administradores piden una sesión real en su propia base: se entra con las mismas credenciales.
+        // Si esa cuenta no existe allí el portal sigue funcionando; solo ese juego mostrará el aviso correspondiente.
+        await connectAll(email, password)
       },
       async signOut() {
-        await signOutGame3().catch(() => {})
-        setGame3(GAME3_NO_SESSION)
+        await Promise.all(links.map((link) => link.signOut().catch(() => {})))
+        setGames(statesOf(noSessionState))
         await firebaseSignOut(centralAuth)
       },
       async resetPassword(email) {
@@ -108,10 +142,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setProfile({ ...profile, mustChangePassword: false })
           await clearMustChangePassword(profile.uid).catch(() => {})
         }
+        // La misma contraseña en la base de cada juego, para que la próxima conexión funcione sin pedirla aparte
+        const gamesNotUpdated = await updateGamePasswords(newPassword).catch(() => links.map((l) => l.displayName))
+        return { gamesNotUpdated }
       },
-    }),
-    [user, profile, loading, game3],
-  )
+    }
+  }, [user, profile, loading, games])
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

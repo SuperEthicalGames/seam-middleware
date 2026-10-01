@@ -23,8 +23,14 @@ export function ChangePasswordForm({ onSuccess }: { onSuccess?: () => void }) {
     }
     setSubmitting(true)
     try {
-      await changePassword(newPassword)
+      const { gamesNotUpdated } = await changePassword(newPassword)
       showToast('success', 'Contraseña actualizada correctamente.')
+      if (gamesNotUpdated.length > 0) {
+        showToast(
+          'info',
+          `No se pudo actualizar la contraseña en ${gamesNotUpdated.join(', ')}. Use "Conectar" con su contraseña nueva cuando el portal se lo pida.`,
+        )
+      }
       setNewPassword('')
       setConfirmPassword('')
       onSuccess?.()

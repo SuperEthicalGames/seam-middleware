@@ -9,7 +9,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:rules": "npx -y firebase-tools@13.35.1 emulators:exec --only database --project demo-seam-middleware \"vitest run src/adapters/Game3Adapter.rules.test.ts\""
+    "test:rules": "npx -y firebase-tools@13.35.1 emulators:exec --only auth,database --project demo-seam-middleware \"vitest run rules\""
   },
   "dependencies": {
     "firebase": "^11.0.2",
