@@ -4,7 +4,7 @@ import { Sidebar, SidebarNav } from '@/components/Sidebar'
 import { Header, type HeaderParent } from '@/components/Header'
 import { Logo } from '@/components/Logo'
 import { InlineSpinner } from '@/components/LoadingSpinner'
-import { Game3Banner } from '@/components/Game3Banner'
+import { GameLinksBanner } from '@/components/GameLinksBanner'
 import { GAME_CATALOG } from '@/config/games'
 import type { GameId } from '@/types/game'
 
@@ -78,7 +78,7 @@ export function AppLayout() {
       <div className="flex min-w-0 flex-1 flex-col">
         <Header title={pageMeta.title} parent={pageMeta.parent} onMenuClick={() => setMobileOpen(true)} />
         <main ref={mainRef} className="flex-1 overflow-y-auto p-4 md:p-6">
-          <Game3Banner />
+          <GameLinksBanner />
           <Suspense fallback={<InlineSpinner label="Cargando página..." />}>
             <div key={location.pathname} className="animate-fade-in-up">
               <Outlet />

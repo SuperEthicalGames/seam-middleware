@@ -49,7 +49,7 @@ No hace falta build ni deploy manual: no ejecutes `npm run build` seguido de una
 npm run test:rules
 ```
 
-Levanta el emulador de Realtime Database (requiere Java 17 o superior) y corre el adaptador del Juego 3 contra `game-database-rules/cafetero.rules.json`: como administrador funciona y como anónimo las Rules lo rechazan. Sin el emulador esas pruebas se omiten, por eso `npm test` y el deploy no dependen de él.
+Levanta los emuladores de Auth y de Realtime Database (requiere Java 17 o superior) y corre, con las Rules reales: el adaptador del Juego 3 (administrador funciona, anónimo rechazado), la capa de administradores de los tres juegos y el flujo completo de pedir acceso, aprobar, dar de alta, cambiar contraseña y dar de baja. Sin el emulador esas pruebas se omiten, por eso `npm test` y el deploy no dependen de él.
 
 ## 5. Verificación post-deploy
 

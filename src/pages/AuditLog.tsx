@@ -13,6 +13,7 @@ const ACTION_META: Record<AuditAction, { label: string; tone: 'success' | 'dange
   serial_deactivate: { label: 'Desactivación de serial', tone: 'danger' },
   admin_created: { label: 'Administrador creado', tone: 'success' },
   admin_revoked: { label: 'Acceso revocado', tone: 'danger' },
+  game_admin_granted: { label: 'Acceso a un juego concedido', tone: 'success' },
   admin_role_changed: { label: 'Rol modificado', tone: 'neutral' },
 }
 
@@ -44,8 +45,13 @@ export function AuditLog() {
             <span className="font-mono text-xs">{e.serial}</span>
             {e.game && <span className="ml-1 text-ink-400">({GAME_CATALOG[e.game as GameId]?.displayName ?? e.game})</span>}
           </span>
+        ) : e.targetEmail ? (
+          <span>
+            {e.targetEmail}
+            {e.game && <span className="ml-1 text-ink-400">({GAME_CATALOG[e.game as GameId]?.displayName ?? e.game})</span>}
+          </span>
         ) : (
-          (e.targetEmail ?? '—')
+          '—'
         ),
     },
     {

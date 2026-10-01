@@ -4,7 +4,8 @@ import { centralDb } from '@/firebase/central'
 import { createAdminAuthAccount } from '@/firebase/adminCreation'
 import { generateTemporaryPassword } from '@/utils/tempPassword'
 import { tryRecordAuditEntry, type AuditResult } from './AuditService'
-import type { AdminProfile, AdminRole } from '@/types/central'
+import { provisionAdminInGames, revokeAdminInGames, type ProvisionOutcome, type RevokeOutcome } from './GameAdminService'
+import type { AdminProfile, AdminRole, GameUids } from '@/types/central'
 
 /**
  * Ver LIMITATIONS.md — no hay Cloud Functions ni Admin SDK en el frontend, así que
@@ -46,6 +47,8 @@ export interface CreateNewAdminParams {
 
 export interface CreateNewAdminResult extends AuditResult {
   profile: AdminProfile
+  /** Qué pasó en la base de cada juego que exige administradores (Cafetero hoy; Amazonas y Cartagena cuando lo activen) */
+  games: ProvisionOutcome[]
   /** Se devuelve una sola vez para que quien crea la cuenta la comparta por un canal seguro. */
   temporaryPassword: string
 }
@@ -62,6 +65,9 @@ export interface CreateNewAdminResult extends AuditResult {
 export async function createNewAdmin(params: CreateNewAdminParams): Promise<CreateNewAdminResult> {
   const temporaryPassword = generateTemporaryPassword()
   const { uid } = await createAdminAuthAccount(params.email, temporaryPassword)
+  // La misma cuenta y contraseña temporal en la base de cada juego, y alta en su `admins`. Un fallo ahí no impide crear al administrador del portal:
+  // el resultado dice qué juego falló y se puede resolver con "Solicitar acceso"
+  const { outcomes, gameUids } = await provisionAdminInGames(params.email, temporaryPassword)
   const profile: AdminProfile = {
     uid,
     email: params.email,
@@ -69,6 +75,7 @@ export async function createNewAdmin(params: CreateNewAdminParams): Promise<Crea
     role: 'admin',
     createdAt: Date.now(),
     mustChangePassword: true,
+    ...(Object.keys(gameUids).length > 0 ? { gameUids } : {}),
   }
   await set(ref(centralDb, `admins/${uid}`), profile)
   const auditResult = await tryRecordAuditEntry({
@@ -77,7 +84,7 @@ export async function createNewAdmin(params: CreateNewAdminParams): Promise<Crea
     action: 'admin_created',
     targetEmail: params.email,
   })
-  return { ...auditResult, profile, temporaryPassword }
+  return { ...auditResult, profile, games: outcomes, temporaryPassword }
 }
 
 /** Se llama tras un cambio de contraseña exitoso tal como quedó escrito — nunca cambia `role`, así que lo permiten las Rules de autoescritura. */
@@ -115,6 +122,8 @@ export async function changeAdminRole(params: ChangeAdminRoleParams): Promise<Au
 export interface RevokeAdminParams {
   targetUid: string
   targetEmail: string
+  /** UID de la persona en la base de cada juego, si se conoce (`AdminProfile.gameUids`) */
+  gameUids?: GameUids
   revokedByUid: string
   revokedByEmail: string
 }
@@ -125,13 +134,16 @@ export interface RevokeAdminParams {
  * la tuviera. No elimina la cuenta de Firebase Auth en sí — eso requiere Admin SDK,
  * fuera de alcance por el mismo motivo documentado en LIMITATIONS.md #3.
  */
-export async function revokeAdmin(params: RevokeAdminParams): Promise<AuditResult> {
+export async function revokeAdmin(params: RevokeAdminParams): Promise<AuditResult & { games: RevokeOutcome[] }> {
+  // Primero los juegos: mientras el perfil exista todavía se sabe con qué UID figura en cada uno
+  const games = await revokeAdminInGames(params.gameUids)
   await remove(ref(centralDb, `admins/${params.targetUid}`))
   await remove(ref(centralDb, `settings/allowedAdminUids/${params.targetUid}`))
-  return tryRecordAuditEntry({
+  const audit = await tryRecordAuditEntry({
     adminUid: params.revokedByUid,
     adminEmail: params.revokedByEmail,
     action: 'admin_revoked',
     targetEmail: params.targetEmail,
   })
+  return { ...audit, games }
 }

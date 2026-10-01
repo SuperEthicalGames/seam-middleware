@@ -3,6 +3,7 @@ import { get, remove, set, update } from 'firebase/database'
 import { ensureAdminProfile, getAllAdmins, createNewAdmin, revokeAdmin, clearMustChangePassword, changeAdminRole } from './AdminService'
 import { createAdminAuthAccount } from '@/firebase/adminCreation'
 import { tryRecordAuditEntry } from './AuditService'
+import { provisionAdminInGames, revokeAdminInGames } from './GameAdminService'
 import { makeSnapshot } from '@/test/firebaseTestUtils'
 import type { User } from 'firebase/auth'
 import type { AdminProfile } from '@/types/central'
@@ -17,6 +18,10 @@ vi.mock('firebase/database', () => ({
 vi.mock('@/firebase/central', () => ({ centralDb: {} }))
 vi.mock('@/firebase/adminCreation', () => ({ createAdminAuthAccount: vi.fn() }))
 vi.mock('./AuditService', () => ({ tryRecordAuditEntry: vi.fn() }))
+vi.mock('./GameAdminService', () => ({
+  provisionAdminInGames: vi.fn(),
+  revokeAdminInGames: vi.fn(),
+}))
 
 const mockedGet = vi.mocked(get)
 const mockedSet = vi.mocked(set)
@@ -24,6 +29,8 @@ const mockedUpdate = vi.mocked(update)
 const mockedRemove = vi.mocked(remove)
 const mockedCreateAuthAccount = vi.mocked(createAdminAuthAccount)
 const mockedTryRecordAudit = vi.mocked(tryRecordAuditEntry)
+const mockedProvisionInGames = vi.mocked(provisionAdminInGames)
+const mockedRevokeInGames = vi.mocked(revokeAdminInGames)
 
 function fakeUser(overrides: Partial<User> = {}): User {
   return { uid: 'uid1', email: 'admin@seam.test', displayName: null, ...overrides } as User
@@ -82,6 +89,7 @@ describe('getAllAdmins', () => {
 describe('createNewAdmin', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockedProvisionInGames.mockResolvedValue({ outcomes: [], gameUids: {} })
   })
 
   const params = { email: 'empleado@seam.test', createdByUid: 'owner1', createdByEmail: 'owner@seam.test' }
@@ -116,11 +124,37 @@ describe('createNewAdmin', () => {
     expect(result.profile.displayName).toBe('empleado')
   })
 
-  it('propaga el error si la creación de la cuenta de Auth falla, sin escribir ningún perfil', async () => {
+  it('da de alta también al administrador en la base de cada juego con la misma contraseña temporal y guarda sus UID para poder revocarlo', async () => {
+    mockedCreateAuthAccount.mockResolvedValueOnce({ uid: 'newUid' })
+    mockedSet.mockResolvedValueOnce(undefined)
+    mockedTryRecordAudit.mockResolvedValueOnce({ auditLogged: true })
+    const outcomes = [{ game: 'game3' as const, displayName: 'Cafetero', result: { status: 'created' as const, uid: 'cafeteroUid', message: '' } }]
+    mockedProvisionInGames.mockResolvedValueOnce({ outcomes, gameUids: { game3: 'cafeteroUid' } })
+
+    const result = await createNewAdmin(params)
+
+    const [, temporaryPasswordArg] = mockedCreateAuthAccount.mock.calls[0]
+    expect(mockedProvisionInGames).toHaveBeenCalledWith('empleado@seam.test', temporaryPasswordArg)
+    expect(mockedSet).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ gameUids: { game3: 'cafeteroUid' } }))
+    expect(result.games).toEqual(outcomes)
+  })
+
+  it('si no hay ningún juego que exija administradores no escribe gameUids', async () => {
+    mockedCreateAuthAccount.mockResolvedValueOnce({ uid: 'newUid' })
+    mockedSet.mockResolvedValueOnce(undefined)
+    mockedTryRecordAudit.mockResolvedValueOnce({ auditLogged: true })
+
+    await createNewAdmin(params)
+
+    expect(mockedSet.mock.calls[0][1]).not.toHaveProperty('gameUids')
+  })
+
+  it('propaga el error si la creación de la cuenta de Auth falla, sin escribir ningún perfil ni tocar los juegos', async () => {
     mockedCreateAuthAccount.mockRejectedValueOnce({ code: 'auth/email-already-in-use' })
 
     await expect(createNewAdmin(params)).rejects.toBeTruthy()
     expect(mockedSet).not.toHaveBeenCalled()
+    expect(mockedProvisionInGames).not.toHaveBeenCalled()
   })
 })
 
@@ -167,6 +201,7 @@ describe('changeAdminRole', () => {
 describe('revokeAdmin', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockedRevokeInGames.mockResolvedValue([])
   })
 
   it('borra el perfil y su entrada del allow-list, y audita admin_revoked', async () => {
@@ -178,5 +213,31 @@ describe('revokeAdmin', () => {
     expect(mockedRemove).toHaveBeenCalledTimes(2)
     expect(mockedTryRecordAudit).toHaveBeenCalledWith(expect.objectContaining({ action: 'admin_revoked', targetEmail: 'empleado@seam.test' }))
     expect(result.auditLogged).toBe(true)
+  })
+
+  it('da de baja a la persona en los juegos con sus UID antes de borrar el perfil, y devuelve qué pasó en cada uno', async () => {
+    mockedRemove.mockResolvedValue(undefined)
+    mockedTryRecordAudit.mockResolvedValueOnce({ auditLogged: true })
+    const order: string[] = []
+    mockedRevokeInGames.mockImplementationOnce(async () => {
+      order.push('juegos')
+      return [{ game: 'game3', displayName: 'Cafetero', ok: true }]
+    })
+    mockedRemove.mockImplementation(async () => {
+      order.push('perfil')
+    })
+
+    const result = await revokeAdmin({
+      targetUid: 'targetUid',
+      targetEmail: 'empleado@seam.test',
+      gameUids: { game3: 'cafeteroUid' },
+      revokedByUid: 'owner1',
+      revokedByEmail: 'owner@seam.test',
+    })
+
+    expect(mockedRevokeInGames).toHaveBeenCalledWith({ game3: 'cafeteroUid' })
+    expect(order[0]).toBe('juegos')
+    expect(order).toContain('perfil')
+    expect(result.games).toEqual([{ game: 'game3', displayName: 'Cafetero', ok: true }])
   })
 })

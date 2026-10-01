@@ -2,6 +2,8 @@ import { useState, type FormEvent } from 'react'
 import { useAsync } from '@/hooks/useAsync'
 import { getAllAdmins, createNewAdmin, revokeAdmin, changeAdminRole } from '@/services/AdminService'
 import { Card } from '@/components/Card'
+import { GameAccessRequests } from '@/components/GameAccessRequests'
+import type { ProvisionOutcome } from '@/services/GameAdminService'
 import { DataTable, type Column } from '@/components/DataTable'
 import { Badge } from '@/components/Badge'
 import { Modal, ConfirmDialog } from '@/components/Modal'
@@ -14,6 +16,8 @@ import type { AdminProfile, AdminRole } from '@/types/central'
 interface NewAdminCredentials {
   email: string
   temporaryPassword: string
+  /** Qué pasó en la base de cada juego que exige administradores */
+  games: ProvisionOutcome[]
 }
 
 function toggledRole(role: AdminRole): AdminRole {
@@ -57,7 +61,7 @@ export function Admins() {
       setShowCreate(false)
       setCreateEmail('')
       setCreateName('')
-      setNewCredentials({ email, temporaryPassword: result.temporaryPassword })
+      setNewCredentials({ email, temporaryPassword: result.temporaryPassword, games: result.games })
       reload()
     } catch (err) {
       showToast('error', toFriendlyMessage(err))
@@ -83,6 +87,7 @@ export function Admins() {
       const result = await revokeAdmin({
         targetUid: pendingRevoke.uid,
         targetEmail: pendingRevoke.email,
+        gameUids: pendingRevoke.gameUids,
         revokedByUid: user.uid,
         revokedByEmail: profile?.email ?? user.email ?? 'desconocido',
       })
@@ -91,6 +96,7 @@ export function Admins() {
       } else {
         showToast('info', `Acceso de ${pendingRevoke.email} revocado, pero no se pudo registrar en la auditoría.`)
       }
+      for (const game of result.games.filter((g) => !g.ok)) showToast('info', game.message ?? `${game.displayName}: no se pudo quitar el acceso.`)
       setPendingRevoke(null)
       reload()
     } catch (err) {
@@ -189,6 +195,7 @@ export function Admins() {
           </button>
         )}
       </Card>
+      {isOwner && <GameAccessRequests />}
       <Card>
         <DataTable
           columns={columns}
@@ -268,6 +275,16 @@ export function Admins() {
               </button>
             </div>
             <p className="text-xs text-ink-400">Deberá cambiarla la primera vez que inicie sesión.</p>
+            {newCredentials.games.length > 0 && (
+              <ul className="space-y-1 border-t border-ink-100 pt-3 text-xs">
+                {newCredentials.games.map((g) => (
+                  <li key={g.game} className={g.result.status === 'created' ? 'text-emerald-700' : 'text-amber-700'}>
+                    <span className="font-medium">{g.displayName}:</span>{' '}
+                    {g.result.status === 'created' ? 'cuenta creada y dada de alta como administrador con la misma contraseña temporal.' : g.result.message}
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         )}
       </Modal>
