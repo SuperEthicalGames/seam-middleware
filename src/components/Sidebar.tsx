@@ -45,6 +45,13 @@ function IconKey({ className }: { className?: string }) {
     </svg>
   )
 }
+function IconDownload({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+      <path d="M12 3v12M7 10.5l5 5 5-5M4 20h16" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
 function IconUsers({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
@@ -66,6 +73,7 @@ const NAV_ITEMS: NavItem[] = [
   { to: '/', label: 'Dashboard', icon: IconDashboard },
   { to: '/buscar', label: 'Buscar usuario', icon: IconSearch, matchAlso: ['/usuario'] },
   { to: '/juegos', label: 'Juegos', icon: IconGames },
+  { to: '/exportar', label: 'Exportar datos', icon: IconDownload },
   { to: '/seriales', label: 'Seriales', icon: IconKey },
   { to: '/administradores', label: 'Administradores', icon: IconUsers },
   { to: '/auditoria', label: 'Auditoría', icon: IconShield },

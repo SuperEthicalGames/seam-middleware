@@ -1,5 +1,5 @@
 import type { G3ResultEntry, G3User, NormalizedSession, NormalizedUser, SessionMetrics } from '@/types/game'
-import { normalizeDifficulty, parseDdMmYyyy, parseDurationToSeconds } from '@/utils/normalize'
+import { normalizeDifficulty, parseDdMmYyyy, parseIdentifier, parseDurationToSeconds } from '@/utils/normalize'
 import { compareChronologically } from '@/utils/sessionOrder'
 
 /** Normalización propia de Game 3 — ver DATA_MAPPING.md, forma distinta a G1/G2. */
@@ -9,8 +9,8 @@ export function normalizeG3User(uid: string, raw: G3User | null): NormalizedUser
   // `CC` es el campo dominante en Game 3, pero se verificó al menos un registro real
   // con `cedula` en vez de (o además de) `CC` — se usa como fallback, nunca se inventa
   // un identificador si ninguno de los dos existe.
-  const identifier = raw.CC ?? raw.cedula
-  if (typeof identifier !== 'string') return null
+  const identifier = parseIdentifier(raw.CC) ?? parseIdentifier(raw.cedula)
+  if (identifier === null) return null
   return {
     game: 'game3',
     uid,

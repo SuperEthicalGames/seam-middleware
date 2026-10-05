@@ -8,6 +8,7 @@ import path from 'node:path'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { assertFails, assertSucceeds, initializeTestEnvironment, type RulesTestEnvironment } from '@firebase/rules-unit-testing'
 import { get, ref, remove, set } from 'firebase/database'
+import { GAME_BOOTSTRAP_OWNER_EMAIL } from '@/config/games'
 import type { Database } from 'firebase/database'
 
 const emulator = process.env.FIREBASE_DATABASE_EMULATOR_HOST
@@ -24,6 +25,8 @@ describe.skipIf(!emulator).each(FILES)('capa de administradores en las Rules de 
   const owner = () => db(env.authenticatedContext(OWNER, { email: 'owner@seam.com' }))
   const admin = () => db(env.authenticatedContext(ADMIN, { email: 'admin@seam.com' }))
   const user = () => db(env.authenticatedContext(USER, { email: 'user@seam.com' }))
+  const rootOwner = (verified: boolean, uid = 'rootUid', email = GAME_BOOTSTRAP_OWNER_EMAIL) =>
+    db(env.authenticatedContext(uid, { email, email_verified: verified }))
   const anonymous = () => db(env.authenticatedContext('anon1', { firebase: { sign_in_provider: 'anonymous' } }))
 
   beforeAll(async () => {
@@ -63,6 +66,36 @@ describe.skipIf(!emulator).each(FILES)('capa de administradores en las Rules de 
       expect(Object.keys(list.val())).toEqual([USER])
       await assertSucceeds(set(ref(owner(), `admins/${USER}`), true))
       await assertSucceeds(remove(ref(owner(), `adminRequests/${USER}`)))
+    })
+  })
+
+  describe('propietario automático: el correo raíz, una vez confirmado', () => {
+    it('la cuenta del correo raíz con el correo confirmado se hace propietaria y administradora sin tocar la consola', async () => {
+      await assertSucceeds(set(ref(rootOwner(true), 'owners/rootUid'), true))
+      await assertSucceeds(set(ref(rootOwner(true), 'admins/rootUid'), true))
+      await assertSucceeds(get(ref(rootOwner(true), 'admins')))
+    })
+
+    it('con el correo SIN confirmar no puede: así nadie se queda con el juego registrando ese correo antes que su dueño', async () => {
+      await assertFails(set(ref(rootOwner(false), 'owners/rootUid'), true))
+    })
+
+    it('otra cuenta con el correo confirmado, pero distinto, no puede', async () => {
+      await assertFails(set(ref(rootOwner(true, 'otherUid', 'otra@persona.com'), 'owners/otherUid'), true))
+    })
+
+    it('el correo raíz solo puede hacerse propietario a sí mismo, no a otra cuenta, y nada más que true', async () => {
+      await assertFails(set(ref(rootOwner(true), `owners/${USER}`), true))
+      await assertFails(set(ref(rootOwner(true), 'owners/rootUid'), false))
+      await assertFails(set(ref(rootOwner(true), 'owners/rootUid'), 'owner'))
+    })
+
+    it('un propietario puede hacer propietario a otra cuenta y quitarle el rol; un administrador común no', async () => {
+      await assertSucceeds(set(ref(owner(), `owners/${USER}`), true))
+      await assertSucceeds(get(ref(owner(), 'owners')))
+      await assertSucceeds(remove(ref(owner(), `owners/${USER}`)))
+      await assertFails(set(ref(admin(), `owners/${USER}`), true))
+      await assertFails(get(ref(admin(), 'owners')))
     })
   })
 

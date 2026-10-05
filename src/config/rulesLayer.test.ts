@@ -1,6 +1,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
+import { GAME_BOOTSTRAP_OWNER_EMAIL } from './games'
 
 /**
  * Los tres juegos usan la MISMA capa de administradores (owners / admins / adminRequests). Si un archivo de Rules cambia y los otros no, el
@@ -17,8 +18,16 @@ describe('capa de administradores de las Rules de los juegos', () => {
     expect(rules.amazonas[node]).toEqual(rules.cafetero[node])
   })
 
-  it('solo los propietarios (que se crean en la consola) pueden dar de alta administradores', () => {
-    expect(rules.cafetero.owners['.write']).toBe(false)
+  it('solo los propietarios pueden dar de alta administradores y propietarios, y nadie escribe `owners` en bloque', () => {
+    expect(rules.cafetero.owners['.write']).toBeUndefined()
     expect(rules.cafetero.admins.$uid['.write']).toContain("root.child('owners')")
+    expect(rules.cafetero.owners.$uid['.write']).toContain("root.child('owners')")
+  })
+
+  it('el correo raíz de las Rules es el mismo que usa el portal, en los tres juegos', () => {
+    for (const game of Object.values(rules)) {
+      expect(game.owners.$uid['.write']).toContain(`auth.token.email === '${GAME_BOOTSTRAP_OWNER_EMAIL}'`)
+      expect(game.owners.$uid['.write']).toContain('auth.token.email_verified === true')
+    }
   })
 })

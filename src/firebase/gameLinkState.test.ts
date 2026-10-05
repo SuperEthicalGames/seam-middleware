@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { classifyGameLink, describeSignInError, noSessionState } from './gameLinkState'
+import { classifyGameLink, describeSignInError, noSessionState, verifyEmailState, visibleGameStates, type GameLinkState } from './gameLinkState'
 
 describe('classifyGameLink', () => {
   it('sin sesión o con sesión anónima: pide conectar (las Rules cerradas no dejan leer a un anónimo)', () => {
@@ -60,5 +60,37 @@ describe('describeSignInError', () => {
     const link = describeSignInError('Cafetero', new Error('secreto interno'))
     expect(link.status).toBe('error')
     expect(link.message).not.toContain('secreto')
+  })
+})
+
+describe('verifyEmailState', () => {
+  it('dice a qué correo se envió el enlace y que hay que volver a comprobar', () => {
+    const state = verifyEmailState('Cafetero', 'ana@seam.com', 'uid1')
+    expect(state).toMatchObject({ status: 'verify-email', uid: 'uid1' })
+    expect(state.message).toContain('ana@seam.com')
+    expect(state.message).toContain('Cafetero')
+    expect(state.message).toContain('Comprobar de nuevo')
+  })
+})
+
+describe('visibleGameStates', () => {
+  const state = (status: GameLinkState['status']): GameLinkState => ({ status, message: status })
+  const requires = (game: string) => game === 'game3'
+
+  it('de un juego que exige administrador para leer se muestra todo', () => {
+    const visible = visibleGameStates({ game3: state('no-session') }, requires)
+    expect(visible.game3?.status).toBe('no-session')
+  })
+
+  it('de uno que todavía no lo exige solo se muestra confirmar el correo; el resto se resuelve solo', () => {
+    for (const status of ['no-session', 'no-account', 'not-admin', 'pending', 'error', 'password-mismatch', 'connected'] as const) {
+      expect(visibleGameStates({ game1: state(status) }, requires).game1).toBeUndefined()
+    }
+    expect(visibleGameStates({ game1: state('verify-email') }, requires).game1?.status).toBe('verify-email')
+  })
+
+  it('mezcla bien varios juegos', () => {
+    const visible = visibleGameStates({ game1: state('error'), game2: state('verify-email'), game3: state('pending') }, requires)
+    expect(Object.keys(visible).sort()).toEqual(['game2', 'game3'])
   })
 })

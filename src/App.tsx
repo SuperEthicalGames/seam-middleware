@@ -18,6 +18,7 @@ const PatientProfile = lazy(() => import('@/pages/PatientProfile').then((m) => (
 const GamesList = lazy(() => import('@/pages/GamesList').then((m) => ({ default: m.GamesList })))
 const GameDetail = lazy(() => import('@/pages/GameDetail').then((m) => ({ default: m.GameDetail })))
 const Serials = lazy(() => import('@/pages/Serials').then((m) => ({ default: m.Serials })))
+const Exportar = lazy(() => import('@/pages/Exportar').then((m) => ({ default: m.Exportar })))
 const Admins = lazy(() => import('@/pages/Admins').then((m) => ({ default: m.Admins })))
 const AuditLog = lazy(() => import('@/pages/AuditLog').then((m) => ({ default: m.AuditLog })))
 const Profile = lazy(() => import('@/pages/Profile').then((m) => ({ default: m.Profile })))
@@ -49,6 +50,7 @@ export function App() {
                 <Route path="/juegos" element={<GamesList />} />
                 <Route path="/juegos/:gameId" element={<GameDetail />} />
                 <Route path="/seriales" element={<Serials />} />
+                <Route path="/exportar" element={<Exportar />} />
                 <Route path="/administradores" element={<Admins />} />
                 <Route path="/auditoria" element={<AuditLog />} />
                 <Route path="/perfil" element={<Profile />} />

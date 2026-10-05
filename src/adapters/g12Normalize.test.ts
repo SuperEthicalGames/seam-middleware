@@ -27,6 +27,22 @@ describe('normalizeG12User', () => {
   })
 })
 
+describe('cédula guardada como número (caso real de Cartagena)', () => {
+  it('se lee como texto en vez de descartar al usuario y sus sesiones', () => {
+    // @ts-expect-error el juego a veces guarda la cédula como número
+    const user = normalizeG12User('game2', 'uid5', { cedula: 900000005, record: { game01: { date: '15/09/2026' } } })
+    expect(user?.identifier).toBe('900000005')
+    expect(user?.hasActivity).toBe(true)
+  })
+
+  it('un número inválido o una cédula vacía siguen siendo "sin identificador"', () => {
+    for (const bad of [1.5, -3, Number.NaN, '', {}, null]) {
+      // @ts-expect-error entrada inválida deliberada
+      expect(normalizeG12User('game2', 'u', { cedula: bad })).toBeNull()
+    }
+  })
+})
+
 describe('normalizeG12Sessions', () => {
   it('convierte cada entrada de record en una sesión normalizada, más reciente primero', () => {
     const sessions = normalizeG12Sessions('game1', 'uid1', userWithActivity)

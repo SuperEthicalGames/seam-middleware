@@ -1,5 +1,5 @@
 import type { G12RecordEntry, G12User, GameId, NormalizedSession, NormalizedUser } from '@/types/game'
-import { normalizeDifficulty, parseDdMmYyyy, parseDurationToSeconds } from '@/utils/normalize'
+import { normalizeDifficulty, parseDdMmYyyy, parseIdentifier, parseDurationToSeconds } from '@/utils/normalize'
 
 /**
  * Normalización compartida por Game 1 y Game 2: se verificó (DATA_MAPPING.md) que ambos
@@ -36,11 +36,12 @@ function entryToSession(game: GameId, uid: string, sourcePath: string, entry: G1
 }
 
 export function normalizeG12User(game: GameId, uid: string, raw: G12User | null): NormalizedUser | null {
-  if (!raw || typeof raw.cedula !== 'string') return null
+  const identifier = parseIdentifier(raw?.cedula)
+  if (!raw || identifier === null) return null
   return {
     game,
     uid,
-    identifier: raw.cedula,
+    identifier,
     hasActivity: Boolean(raw.record || raw.results),
     lastActivityDate: latestRecordDate(raw.record),
   }

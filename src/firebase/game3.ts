@@ -1,7 +1,7 @@
 import { initializeApp } from 'firebase/app'
 import { getDatabase } from 'firebase/database'
 import { createGameLink } from './gameLink'
-import { GAME_REQUIRES_ADMIN } from '@/config/games'
+import { GAME_BOOTSTRAP_OWNER_EMAIL, GAME_MANAGES_ADMINS, GAME_REQUIRES_ADMIN } from '@/config/games'
 
 /**
  * Firebase del Juego 3 — Cafetero (seam-data-game). Config real tomada del
@@ -39,6 +39,8 @@ export const game3Link = createGameLink({
   firebaseConfig: GAME3_FIREBASE_CONFIG,
   hasRealConfig: HAS_REAL_CONFIG,
   requiresAdmin: GAME_REQUIRES_ADMIN.game3,
+  manageAdmins: GAME_MANAGES_ADMINS.game3,
+  bootstrapOwnerEmail: GAME_BOOTSTRAP_OWNER_EMAIL,
 })
 
 /** El adaptador del Juego 3 lo llama antes de cada lectura o escritura: lanza un PortalError con el motivo concreto si falta la conexión de administrador */

@@ -20,6 +20,7 @@ const connectGames = vi.fn()
 const requestGameAccess = vi.fn()
 const refreshGames = vi.fn()
 const resetGamePassword = vi.fn()
+const resendGameVerification = vi.fn()
 
 function setGame3(state: GameLinkState | undefined) {
   auth.value = {
@@ -28,6 +29,7 @@ function setGame3(state: GameLinkState | undefined) {
     requestGameAccess,
     refreshGames,
     resetGamePassword,
+    resendGameVerification,
     user: { email: 'ana@seam.com' },
   }
 }
@@ -56,6 +58,7 @@ beforeEach(() => {
   requestGameAccess.mockResolvedValue({ status: 'pending', message: '' })
   refreshGames.mockResolvedValue(undefined)
   resetGamePassword.mockResolvedValue(true)
+  resendGameVerification.mockResolvedValue(true)
 })
 
 afterEach(async () => {
@@ -122,6 +125,17 @@ describe('GameLinksBanner', () => {
 
     await click('Comprobar de nuevo')
     expect(refreshGames).toHaveBeenCalled()
+  })
+
+  it('propietario por confirmar: dice a qué correo llegó el enlace y deja reenviarlo o volver a comprobar', async () => {
+    setGame3({ status: 'verify-email', message: 'Falta confirmar su correo: se envió un enlace a ana@seam.com.', uid: 'u1' })
+    await render()
+    expect(container.textContent).toContain('ana@seam.com')
+    expect(buttons()).toEqual(['Reenviar correo', 'Comprobar de nuevo'])
+
+    await click('Reenviar correo')
+    expect(resendGameVerification).toHaveBeenCalledWith('game3')
+    expect(showToast).toHaveBeenCalledWith('success', expect.stringContaining('ana@seam.com'))
   })
 
   it('solicitud pendiente: no vuelve a ofrecer pedir, solo comprobar de nuevo', async () => {
