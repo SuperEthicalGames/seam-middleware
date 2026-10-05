@@ -16,6 +16,17 @@ export function parseDdMmYyyy(raw: string | undefined | null): string | null {
 }
 
 /**
+ * Cédula/CC tal como la guardó el juego. Casi siempre es texto, pero en datos reales de Cartagena hay un usuario cuya cédula se guardó como NÚMERO:
+ * descartarlo (como se hacía) dejaba sus sesiones fuera del portal y de las exportaciones sin avisar. Un número entero seguro se lee como su texto;
+ * cualquier otra cosa (vacío, objeto, decimal, NaN) sigue siendo "sin identificador".
+ */
+export function parseIdentifier(raw: unknown): string | null {
+  if (typeof raw === 'string') return raw.length > 0 ? raw : null
+  if (typeof raw === 'number' && Number.isSafeInteger(raw) && raw >= 0) return String(raw)
+  return null
+}
+
+/**
  * Parsea duraciones tipo '4:04 seconds' o '0:50 seconds' a segundos numéricos.
  * Formato real observado: 'M:SS seconds' (minutos:segundos, sin ceros a la izquierda en minutos).
  */

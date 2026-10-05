@@ -12,6 +12,7 @@
     "test:rules": "npx -y firebase-tools@13.35.1 emulators:exec --only auth,database --project demo-seam-middleware \"vitest run rules\""
   },
   "dependencies": {
+    "fflate": "^0.8.2",
     "firebase": "^11.0.2",
     "jspdf": "^2.5.2",
     "jspdf-autotable": "^3.8.4",

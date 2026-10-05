@@ -12,6 +12,7 @@ Portal administrativo interno de SEAM: consulta centralizada (solo lectura, salv
 - Firebase (Auth + Realtime Database) — 4 proyectos independientes (central + 3 juegos)
 - Recharts (gráficos)
 - jsPDF + jspdf-autotable (reportes PDF, 100% cliente)
+- fflate (zip) + escritor propio de .xlsx en `src/export/` (exportación a Excel por fecha y hora, 100% cliente)
 - Vitest (pruebas unitarias)
 
 Todo el stack es gratuito y se despliega gratis (Firebase Hosting Spark + Realtime Database Spark). Ver sección "Costo" más abajo y `LIMITATIONS.md`.
@@ -64,6 +65,7 @@ src/
   charts/       # componentes de gráficos (recharts) + paleta validada
   components/   # UI compartida (tablas, cards, modales, toasts, estados)
   config/       # catálogo de juegos (nombres visibles, URLs, enabled)
+  export/       # exportación a Excel: escritor .xlsx + armado de hojas (Resumen, Sesiones, Por hora, Por día)
   firebase/     # 4 clientes Firebase independientes (central, game1, game2, game3)
   hooks/        # useAsync
   layouts/      # AppLayout (sidebar + header)
