@@ -35,6 +35,7 @@ function getPageMeta(pathname: string, gameId: string | undefined, fromParent: H
     return { title, parent: { label: 'Juegos', to: '/juegos' } }
   }
   if (pathname.startsWith('/juegos')) return { title: 'Juegos' }
+  if (pathname.startsWith('/agenda')) return { title: 'Agenda de sesión' }
   if (pathname.startsWith('/exportar')) return { title: 'Exportar datos' }
   if (pathname.startsWith('/seriales')) return { title: 'Seriales' }
   if (pathname.startsWith('/administradores')) return { title: 'Administradores' }
