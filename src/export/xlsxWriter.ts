@@ -9,7 +9,7 @@ import { strToU8, zipSync } from 'fflate'
  * como texto: un valor que empiece por `=`, `+`, `-` o `@` jamás se interpreta como fórmula.
  */
 
-export type CellStyle = 'header' | 'title' | 'label' | 'decimal'
+export type CellStyle = 'header' | 'title' | 'label' | 'decimal' | 'wrap' | 'band' | 'bandWrap' | 'highlight'
 
 export interface CellObject {
   value?: string | number | null
@@ -32,7 +32,7 @@ export interface SheetSpec {
 }
 
 // Índices de `cellXfs` en styles.xml — mantener sincronizados con STYLES_XML.
-const STYLE_ID = { default: 0, header: 1, date: 2, time: 3, title: 4, label: 5, decimal: 6 } as const
+const STYLE_ID = { default: 0, header: 1, date: 2, time: 3, title: 4, label: 5, decimal: 6, wrap: 7, band: 8, bandWrap: 9, highlight: 10 } as const
 
 const STYLES_XML =
   '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
@@ -44,11 +44,14 @@ const STYLES_XML =
   '<font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Calibri"/></font>' +
   '<font><b/><sz val="16"/><color rgb="FF036859"/><name val="Calibri"/></font>' +
   '</fonts>' +
-  '<fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill>' +
-  '<fill><patternFill patternType="solid"><fgColor rgb="FF00B398"/><bgColor indexed="64"/></patternFill></fill></fills>' +
-  '<borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders>' +
+  '<fills count="5"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill>' +
+  '<fill><patternFill patternType="solid"><fgColor rgb="FF00B398"/><bgColor indexed="64"/></patternFill></fill>' +
+  '<fill><patternFill patternType="solid"><fgColor rgb="FFF3FCFA"/><bgColor indexed="64"/></patternFill></fill>' +
+  '<fill><patternFill patternType="solid"><fgColor rgb="FFE2F8F5"/><bgColor indexed="64"/></patternFill></fill></fills>' +
+  '<borders count="2"><border><left/><right/><top/><bottom/><diagonal/></border>' +
+  '<border><left style="thin"><color rgb="FFCFD8DC"/></left><right style="thin"><color rgb="FFCFD8DC"/></right><top style="thin"><color rgb="FFCFD8DC"/></top><bottom style="thin"><color rgb="FFCFD8DC"/></bottom><diagonal/></border></borders>' +
   '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>' +
-  '<cellXfs count="7">' +
+  '<cellXfs count="11">' +
   '<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>' +
   '<xf numFmtId="0" fontId="2" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>' +
   '<xf numFmtId="164" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1" applyAlignment="1"><alignment horizontal="center"/></xf>' +
@@ -56,6 +59,10 @@ const STYLES_XML =
   '<xf numFmtId="0" fontId="3" fillId="0" borderId="0" xfId="0" applyFont="1"/>' +
   '<xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/>' +
   '<xf numFmtId="2" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/>' +
+  '<xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1"><alignment vertical="top" wrapText="1"/></xf>' +
+  '<xf numFmtId="0" fontId="0" fillId="3" borderId="1" xfId="0" applyFill="1" applyBorder="1" applyAlignment="1"><alignment vertical="top"/></xf>' +
+  '<xf numFmtId="0" fontId="0" fillId="3" borderId="1" xfId="0" applyFill="1" applyBorder="1" applyAlignment="1"><alignment vertical="top" wrapText="1"/></xf>' +
+  '<xf numFmtId="0" fontId="1" fillId="4" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment vertical="top" wrapText="1"/></xf>' +
   '</cellXfs>' +
   '</styleSheet>'
 
@@ -104,6 +111,10 @@ export function excelDateSerial(iso: string): number | null {
 function cellXml(ref: string, cell: Cell): string {
   if (cell === null || cell === undefined || cell === '') return ''
   const obj: CellObject = typeof cell === 'object' ? cell : { value: cell }
+  // Una celda vacía con relleno o borde (tabla con filas alternas) sí se escribe, para que la tabla no quede con huecos.
+  if (obj.date === undefined && obj.time === undefined && (obj.value === null || obj.value === undefined || obj.value === '')) {
+    return obj.style && obj.style !== 'decimal' ? `<c r="${ref}" s="${STYLE_ID[obj.style]}"/>` : ''
+  }
 
   if (obj.date !== undefined) {
     const serial = excelDateSerial(obj.date)
@@ -127,7 +138,7 @@ function cellXml(ref: string, cell: Cell): string {
 }
 
 function textCell(ref: string, text: string, style: CellStyle | undefined): string {
-  const s = style === 'header' ? STYLE_ID.header : style === 'title' ? STYLE_ID.title : style === 'label' ? STYLE_ID.label : STYLE_ID.default
+  const s = style ? STYLE_ID[style === 'decimal' ? 'default' : style] : STYLE_ID.default
   const space = /^\s|\s$|\n/.test(text) ? ' xml:space="preserve"' : ''
   return `<c r="${ref}" s="${s}" t="inlineStr"><is><t${space}>${escapeXml(text)}</t></is></c>`
 }

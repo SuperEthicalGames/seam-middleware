@@ -65,7 +65,7 @@ src/
   charts/       # componentes de gráficos (recharts) + paleta validada
   components/   # UI compartida (tablas, cards, modales, toasts, estados)
   config/       # catálogo de juegos (nombres visibles, URLs, enabled)
-  export/       # exportación a Excel: escritor .xlsx + armado de hojas (Resumen, Sesiones, Por hora, Por día)
+  export/       # Excel: escritor y lector .xlsx, exportación por fecha/hora/juego y agenda "dónde continuar" (src/utils/resumePoint.ts)
   firebase/     # 4 clientes Firebase independientes (central, game1, game2, game3)
   hooks/        # useAsync
   layouts/      # AppLayout (sidebar + header)
