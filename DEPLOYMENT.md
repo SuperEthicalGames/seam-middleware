@@ -64,7 +64,7 @@ Repetir la lista de la sección 75 del prompt original contra la URL pública de
 - [ ] Perfil consolidado con filtros funcionando
 - [ ] Exportar PDF respeta los filtros aplicados
 - [ ] Activar/desactivar un serial pide confirmación y queda en Auditoría
-- [ ] Cafetero carga datos sin el aviso amarillo "Cafetero no se puede consultar" (si aparece, seguir los pasos de LIMITATIONS.md sección 13: cuenta de administrador en `seam-data-game` y `admins/{uid}`)
+- [ ] Cafetero carga datos sin el aviso amarillo "Cafetero no se puede consultar" (si aparece, seguir los pasos de LIMITATIONS.md sección 13: cuenta de administrador en `seam-ejecafetero-ae869` (antes `seam-data-game`) y `admins/{uid}`)
 - [ ] Responsive en tablet (el portal es desktop-first pero debe ser usable en tablet)
 
 ## 6. Actualizaciones futuras

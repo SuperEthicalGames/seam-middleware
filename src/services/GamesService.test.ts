@@ -43,6 +43,21 @@ describe('loadGameOverview', () => {
     expect(adapterRegistry.game1.getUserSessions).toHaveBeenCalledWith('u1')
   })
 
+  it('la cuenta de familiarización no cuenta como usuario ni sus intentos como sesiones: se anotan aparte', async () => {
+    vi.mocked(adapterRegistry.game3.getUsers).mockResolvedValueOnce([
+      makeUser({ game: 'game3', uid: 'persona', identifier: '1005123456' }),
+      makeUser({ game: 'game3', uid: 'practica', identifier: 'familiarización' }),
+    ])
+    vi.mocked(adapterRegistry.game3.getSerials).mockResolvedValueOnce([])
+    vi.mocked(adapterRegistry.game3.getUserSessions).mockImplementation(async (uid: string) =>
+      uid === 'practica' ? [makeSession({ uid }), makeSession({ uid }), makeSession({ uid })] : [makeSession({ uid })],
+    )
+
+    const overview = await loadGameOverview('game3')
+
+    expect(overview).toMatchObject({ state: 'ok', totalUsers: 1, usersWithActivity: 1, totalSessions: 1, practiceSessions: 3 })
+  })
+
   it('devuelve state=error sin lanzar si el juego falla', async () => {
     vi.mocked(adapterRegistry.game2.getUsers).mockRejectedValueOnce({ code: 'PERMISSION_DENIED' })
 

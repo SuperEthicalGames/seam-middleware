@@ -3,6 +3,7 @@ import type { GameCatalogEntry, GameId } from '@/types/game'
 // Nombres confirmados a partir del `google-services.json` de cada app Android
 // (project_id / android package name): seam-data-as -> com.agencycic.amazonas,
 // seam-data-cartagena -> com.agencycic.cartagena, seam-data-game -> com.agencycic.cafetero.
+// Cafetero se mudó el 2026-10-08 a seam-ejecafetero-ae869 (package com.seam.ejecafetero).
 // No son nombres inventados por el portal; si el cliente usa otro nombre comercial
 // públicamente, actualizar aquí es el único cambio necesario (sección 56 del prompt).
 export const GAME_CATALOG: Record<GameId, GameCatalogEntry> = {
@@ -21,7 +22,7 @@ export const GAME_CATALOG: Record<GameId, GameCatalogEntry> = {
   game3: {
     id: 'game3',
     displayName: 'Cafetero',
-    databaseUrl: 'https://seam-data-game-default-rtdb.firebaseio.com',
+    databaseUrl: 'https://seam-ejecafetero-ae869-default-rtdb.firebaseio.com',
     enabled: true,
   },
 }

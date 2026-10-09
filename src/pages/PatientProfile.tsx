@@ -14,6 +14,7 @@ import { EMPTY_FILTERS, applySessionFilters } from '@/utils/sessionFilters'
 import { generatePatientReportPdf } from '@/reports/PatientReport'
 import { useAuth } from '@/auth/AuthContext'
 import { useToast } from '@/components/ToastProvider'
+import { PRACTICE_ACCOUNT_LABEL, isPracticeAccount } from '@/utils/practiceAccount'
 
 export function PatientProfile() {
   const { identifier = '' } = useParams<{ identifier: string }>()
@@ -64,7 +65,10 @@ export function PatientProfile() {
       <Card className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <p className="text-xs uppercase tracking-wide text-ink-400">Cédula / CC</p>
-          <h2 className="text-xl font-semibold text-ink-900">{data.identifier}</h2>
+          <h2 className="flex flex-wrap items-center gap-3 text-xl font-semibold text-ink-900">
+            {data.identifier}
+            {isPracticeAccount(data.identifier) && <Badge tone="info">{PRACTICE_ACCOUNT_LABEL}</Badge>}
+          </h2>
           <p className="mt-1 text-sm text-ink-500">
             Encontrado en {foundCount} de {data.results.length} juegos
           </p>

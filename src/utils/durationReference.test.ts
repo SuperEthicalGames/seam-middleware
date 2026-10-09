@@ -5,7 +5,18 @@ describe('getDurationReference', () => {
   it('Cafetero varía por minijuego y por dificultad', () => {
     expect(getDurationReference('game3', 'CoffeeCollection', 'easy')).toBe(120)
     expect(getDurationReference('game3', 'CoffeeCollection', 'hard')).toBe(80)
-    expect(getDurationReference('game3', 'CoffeeWash', 'easy')).toBe(40)
+    expect(getDurationReference('game3', 'CoffeeWash', 'easy')).toBe(60)
+  })
+
+  it('Cafetero sigue los límites de tiempo actuales del juego (app 1.4.1)', () => {
+    expect(getDurationReference('game3', 'CoffeeWash', 'medium')).toBe(50)
+    expect(getDurationReference('game3', 'CoffeeWash', 'hard')).toBe(40)
+    expect(getDurationReference('game3', 'CoffeeClassification', 'hard')).toBe(45)
+    expect(getDurationReference('game3', 'CoffeeElaboration', 'hard')).toBe(45)
+  })
+
+  it('una victoria de Lavado de 45 s en Fácil ya no queda en 0 % de velocidad', () => {
+    expect(durationToPercent('game3', 'CoffeeWash', 'easy', 45)).toBe(25)
   })
 
   it('Amazonas varía por minijuego y por dificultad', () => {

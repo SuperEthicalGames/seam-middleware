@@ -90,4 +90,29 @@ describe('loadDashboardData', () => {
 
     expect(data.difficultyDistribution).toEqual({ easy: 1, medium: 0, hard: 1, unknown: 0 })
   })
+
+  it('la cuenta de familiarización de Cafetero no cuenta como persona: sus intentos se anotan aparte y no entran en los totales ni en los gráficos', async () => {
+    vi.mocked(adapterRegistry.game1.getUsers).mockResolvedValueOnce([])
+    vi.mocked(adapterRegistry.game1.getSerials).mockResolvedValueOnce([])
+    vi.mocked(adapterRegistry.game2.getUsers).mockResolvedValueOnce([])
+    vi.mocked(adapterRegistry.game2.getSerials).mockResolvedValueOnce([])
+    vi.mocked(adapterRegistry.game3.getUsers).mockResolvedValueOnce([
+      makeUser({ game: 'game3', uid: 'persona', identifier: '1005123456' }),
+      makeUser({ game: 'game3', uid: 'practica', identifier: 'familiarizacion' }),
+    ])
+    vi.mocked(adapterRegistry.game3.getSerials).mockResolvedValueOnce([])
+    vi.mocked(adapterRegistry.game3.getUserSessions).mockImplementation(async (uid: string) =>
+      uid === 'practica'
+        ? Array.from({ length: 5 }, () => makeSession({ game: 'game3', uid, date: '2026-10-01', difficulty: 'hard' }))
+        : [makeSession({ game: 'game3', uid, date: '2026-10-02', difficulty: 'easy' }), makeSession({ game: 'game3', uid, date: '2026-10-02', difficulty: 'easy' })],
+    )
+
+    const data = await loadDashboardData()
+
+    const g3 = data.summaries.find((s) => s.game === 'game3')
+    expect(g3).toMatchObject({ state: 'ok', totalUsers: 1, usersWithActivity: 1, totalSessions: 2, practiceSessions: 5 })
+    expect(data.topPatients.map((p) => p.identifier)).toEqual(['1005123456'])
+    expect(data.sessionsByDate).toEqual([{ date: '2026-10-02', game1: 0, game2: 0, game3: 2 }])
+    expect(data.difficultyDistribution).toEqual({ easy: 2, medium: 0, hard: 0, unknown: 0 })
+  })
 })

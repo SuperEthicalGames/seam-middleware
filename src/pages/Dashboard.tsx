@@ -13,6 +13,7 @@ import { TopPatientsChart } from '@/charts/TopPatientsChart'
 import { ExercisePerformanceOverviewChart } from '@/charts/ExercisePerformanceOverviewChart'
 import { PerformanceDistributionChart } from '@/charts/PerformanceDistributionChart'
 import { GAME_CATALOG } from '@/config/games'
+import { PRACTICE_ACCOUNT_LABEL } from '@/utils/practiceAccount'
 
 export function Dashboard() {
   const { data, loading, error, reload } = useAsync(() => loadDashboardData(), [])
@@ -42,6 +43,7 @@ export function Dashboard() {
 
   const totalUsers = data.summaries.reduce((acc, s) => acc + s.totalUsers, 0)
   const totalSessions = data.summaries.reduce((acc, s) => acc + s.totalSessions, 0)
+  const totalPracticeSessions = data.summaries.reduce((acc, s) => acc + s.practiceSessions, 0)
   const totalActiveSerials = data.summaries.reduce((acc, s) => acc + s.activeSerials, 0)
   const totalSerials = data.summaries.reduce((acc, s) => acc + s.totalSerials, 0)
   const gamesWithErrors = data.summaries.filter((s) => s.state === 'error')
@@ -66,6 +68,12 @@ export function Dashboard() {
         />
         <StatCard label="Seriales activos" value={`${totalActiveSerials} / ${totalSerials}`} hint="Total activos sobre total de seriales" />
       </div>
+
+      {totalPracticeSessions > 0 && (
+        <p className="text-sm text-ink-500">
+          No se cuentan {totalPracticeSessions} intentos de la {PRACTICE_ACCOUNT_LABEL.toLowerCase()} (práctica con el botón de invitado de Cafetero): no son una persona.
+        </p>
+      )}
 
       <div>
         <h2 className="mb-3 text-base font-semibold text-ink-900">Rendimiento de usuarios</h2>

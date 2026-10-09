@@ -12,6 +12,7 @@ import { DataTable, type Column } from '@/components/DataTable'
 import { SerialsTable } from '@/components/SerialsTable'
 import type { NormalizedUser } from '@/types/game'
 import { formatDateEs } from '@/utils/normalize'
+import { PRACTICE_ACCOUNT_LABEL, isPracticeAccount } from '@/utils/practiceAccount'
 
 type Tab = 'resumen' | 'usuarios' | 'seriales'
 
@@ -52,7 +53,17 @@ export function GameDetail() {
   }
 
   const userColumns: Column<NormalizedUser>[] = [
-    { key: 'identifier', header: 'Cédula / CC', render: (u) => u.identifier, sortValue: (u) => u.identifier },
+    {
+      key: 'identifier',
+      header: 'Cédula / CC',
+      render: (u) => (
+        <span className="inline-flex flex-wrap items-center gap-2">
+          {u.identifier}
+          {isPracticeAccount(u.identifier) && <Badge tone="info">{PRACTICE_ACCOUNT_LABEL}</Badge>}
+        </span>
+      ),
+      sortValue: (u) => u.identifier,
+    },
     {
       key: 'activity',
       header: 'Actividad',
@@ -116,7 +127,11 @@ export function GameDetail() {
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
             <StatCard label="Usuarios registrados" value={overviewState.data.totalUsers} />
             <StatCard label="Usuarios con actividad" value={overviewState.data.usersWithActivity} />
-            <StatCard label="Sesiones registradas" value={overviewState.data.totalSessions} />
+            <StatCard
+              label="Sesiones registradas"
+              value={overviewState.data.totalSessions}
+              hint={overviewState.data.practiceSessions > 0 ? `Sin contar ${overviewState.data.practiceSessions} intentos de la ${PRACTICE_ACCOUNT_LABEL.toLowerCase()}` : undefined}
+            />
             <StatCard label="Seriales activos" value={`${overviewState.data.activeSerials} / ${overviewState.data.totalSerials}`} />
           </div>
         ))}

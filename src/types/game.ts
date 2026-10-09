@@ -34,7 +34,7 @@ export interface G12User {
 }
 
 // ---------------------------------------------------------------------------
-// Game 3 (seam-data-game) — forma distinta, confirmada por muestreo real
+// Game 3 (seam-ejecafetero-ae869, antes seam-data-game) — forma distinta, confirmada por muestreo real
 // ---------------------------------------------------------------------------
 
 export interface G3ResultEntry {

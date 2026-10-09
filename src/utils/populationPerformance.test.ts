@@ -109,7 +109,7 @@ describe('computePerformanceDistribution', () => {
       game2: [],
       game3: [
         session({ game: 'game3', exercise: 'CoffeeClassification', difficulty: 'easy', score: 1900 }), // 1900/2800 = 68% -> medio
-        session({ game: 'game3', exercise: 'CoffeeClassification', difficulty: 'hard', score: 1900 }), // 1900/1800 -> 100% -> alto
+        session({ game: 'game3', exercise: 'CoffeeClassification', difficulty: 'hard', score: 1900 }), // 1900/1900 -> 100% -> alto
       ],
     }
     expect(computePerformanceDistribution(byGame)).toEqual({ bajo: 0, medio: 1, alto: 1 })

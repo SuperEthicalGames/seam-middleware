@@ -8,6 +8,7 @@ import { Card } from '@/components/Card'
 import { Badge } from '@/components/Badge'
 import { DataTable, type Column } from '@/components/DataTable'
 import { formatDateEs } from '@/utils/normalize'
+import { PRACTICE_ACCOUNT_LABEL, isPracticeAccount } from '@/utils/practiceAccount'
 
 type GameFilter = GameId | 'all'
 type ActivityFilter = 'all' | 'active' | 'inactive'
@@ -58,7 +59,12 @@ export function Search() {
     {
       key: 'identifier',
       header: 'Cédula / CC',
-      render: (p) => <span className="font-medium text-ink-800">{p.identifier}</span>,
+      render: (p) => (
+        <span className="inline-flex flex-wrap items-center gap-2">
+          <span className="font-medium text-ink-800">{p.identifier}</span>
+          {isPracticeAccount(p.identifier) && <Badge tone="info">{PRACTICE_ACCOUNT_LABEL}</Badge>}
+        </span>
+      ),
       sortValue: (p) => p.identifier,
     },
     {

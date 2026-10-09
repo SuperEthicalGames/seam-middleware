@@ -33,7 +33,7 @@ podría leer ni activar seriales.
 4. Se verifica en cada proyecto (Firebase Console → Realtime Database → uso/registros)
    que el tráfico real ya llega autenticado — sin escrituras nuevas sin `auth.uid`.
 5. Recién ahí, se publica el archivo correspondiente de esta carpeta en **Rules** de
-   cada proyecto (`seam-data-as`, `seam-data-cartagena`, `seam-data-game`) desde su
+   cada proyecto (`seam-data-as`, `seam-data-cartagena`, `seam-ejecafetero-ae869` — este último antes `seam-data-game`) desde su
    propia Firebase Console — cada proyecto es independiente, no hay un solo `firebase
    deploy` que los cubra a los 3 (ni siquiera al que sí gestiona este repo, que solo
    apunta al proyecto central `seam-middleware`, ver `firebase.json`).
