@@ -8,7 +8,7 @@ No se recibieron archivos JSON exportados en el directorio de trabajo (`D:\Portf
 
 - `https://seam-data-as-default-rtdb.firebaseio.com/{path}.json`
 - `https://seam-data-cartagena-default-rtdb.firebaseio.com/{path}.json`
-- `https://seam-data-game-default-rtdb.firebaseio.com/{path}.json`
+- `https://seam-ejecafetero-ae869-default-rtdb.firebaseio.com/{path}.json` (Cafetero; hasta el 2026-10-07 fue `https://seam-data-game-default-rtdb.firebaseio.com`)
 
 Se hicieron únicamente peticiones `GET` (nunca `PUT`/`PATCH`/`DELETE`). Se usó `?shallow=true` para enumerar claves sin descargar todo el árbol, y se leyeron muestras puntuales (5 usuarios por juego + varios `identificators`/`serials`) para inferir la forma real de los datos. **El nodo raíz (`/`) devuelve `Permission denied`** en los tres proyectos — solo los tres subnodos con regla explícita son legibles. Esto confirma, con evidencia directa, que los tres root nodes reales son exactamente `identificators`, `serials`, `users` — no hay otros nodos accesibles.
 
@@ -60,7 +60,7 @@ Estructura **idéntica** a Game 1 (`cedula`, `record.gameNN`, `results.<experien
 
 ---
 
-## 3. GAME 3 — `seam-data-game` ("Cafetero")
+## 3. GAME 3 — `seam-ejecafetero-ae869` ("Cafetero", antes `seam-data-game`)
 
 Escala observada: 18 `users`, **1** `identificators`, **1** `serials`.
 
@@ -80,6 +80,7 @@ Escala observada: 18 `users`, **1** `identificators`, **1** `serials`.
 | `results.gameNN.isWin` | boolean | solo compilaciones recientes | `true` | Si el intento se ganó o se perdió. Sin él, una derrota por tiempo dura exactamente el límite del nivel y no se distingue de una victoria lenta. |
 | `results.gameNN.timestampUtc` | string | solo compilaciones recientes | `"2026-09-25T15:00:00.1234567Z"` | Reloj del visor al terminar el intento, con milisegundos. Es el orden real de las partidas. |
 | `results.gameNN.scoreModel` | number | desde `2` | `2` | Versión del significado del puntaje. **Sin este campo, un Lavado con puntaje 100 solo significa "ganó"**: hasta sept-2026 toda victoria de Lavado guardaba 100. |
+| `appVersion`, `recordId` | string | compilaciones recientes | `"1.4.1"` | Versión de la app que guardó el intento (`Application.version`; desde la 1.4.0 distingue compilaciones) e identificador único del registro, que evita guardarlo dos veces si el envío se reintenta. |
 | `sessionId`, `attempt`, `device`, `serverTimestamp` | string, number, string, number | desde `scoreModel: 2` | | Sesión del usuario, número de intento de ese ejercicio y nivel dentro de ella, modelo del visor y hora del servidor al llegar el resultado. |
 | `errors`, `leftCount`, `rightCount`, `wrongArm`, `outOfOrder`, `reTouch`, `errRed`, `errYellow`, `errGreen`, `stepsDone`, `drops`, `offPathSeconds`, `firstActionSeconds` | number | desde `scoreModel: 2`, cada minijuego solo los que mide | | Qué pasó en el intento además del puntaje. **Ausente = el minijuego no lo mide; `0` = se midió y no ocurrió.** Significado de cada uno en `firebase/README.md` del repositorio del juego. |
 | `results.gameNN.stars` | — | **nunca observado** | — | Game 3 **no tiene el concepto de estrellas** en los datos reales. |
@@ -101,7 +102,7 @@ Mismo patrón conceptual (hash string → serial code string → `0`/`1`), pero 
 
 ## 4. Matriz comparativa
 
-| Capacidad / Campo | Game 1 (`seam-data-as`) | Game 2 (`seam-data-cartagena`) | Game 3 (`seam-data-game`) | Normalizable |
+| Capacidad / Campo | Game 1 (`seam-data-as`) | Game 2 (`seam-data-cartagena`) | Game 3 (`seam-ejecafetero-ae869`) | Normalizable |
 |---|---|---|---|---|
 | Identificador de usuario | `users/{uid}.cedula` (string) | `users/{uid}.cedula` (string) | `users/{uid}.CC` (string) | Sí → `identifier` |
 | Log de sesiones | `users/{uid}.record.gameNN` | `users/{uid}.record.gameNN` | `users/{uid}.results.gameNN` | Sí → `NormalizedSession[]` |
