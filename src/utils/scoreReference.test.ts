@@ -46,6 +46,11 @@ describe('sessionScorePercent', () => {
     expect(s({ exercise: 'CoffeeClassification', difficulty: 'medium', score: 1100 })).toBe(50) // 1100/2200, 1000 + 20 × 60 s
   })
 
+  it('Clasificación Difícil mide contra 1900 (límite de 45 s del juego 1.4.x), no 1800', () => {
+    expect(s({ exercise: 'CoffeeClassification', difficulty: 'hard', score: 1900 })).toBe(100) // 1000 + 20 × 45 s
+    expect(s({ exercise: 'CoffeeClassification', difficulty: 'hard', score: 950 })).toBe(50) // 950/1900
+  })
+
   it('el mismo puntaje crudo vale más en un nivel más difícil porque su máximo es menor', () => {
     const easy = s({ exercise: 'CoffeeClassification', difficulty: 'easy', score: 1800 })!
     const hard = s({ exercise: 'CoffeeClassification', difficulty: 'hard', score: 1800 })!

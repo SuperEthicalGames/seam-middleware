@@ -39,15 +39,21 @@ export function scoreToPercent(game: GameId, experience: string | null, score: n
 /**
  * Puntaje máximo alcanzable en Cafetero, por minijuego y nivel — sale de las fórmulas del juego, no de
  * datos: Recolección y Clasificación son (1000 + 20 × segundos que sobran) × fracción completada, y el
- * límite de tiempo baja con el nivel (Recolección 120/100/80 s, Clasificación 90/60/40 s), así que el
+ * límite de tiempo baja con el nivel (Recolección 120/100/80 s, Clasificación 90/60/45 s), así que el
  * máximo también baja con el nivel. Los otros tres módulos puntúan sobre 1000.
+ *
+ * Los límites salen de los assets de ajustes del juego (`Coffee collection settings`, `Coffee classification
+ * settings`, app 1.4.1): `BaseScore` 1000 y `PointsPerSecondLeft` 20 en esos dos módulos, 0 en los demás.
+ * Clasificación Difícil tenía 40 s el 2026-10-03 (máximo 1800) y 45 s en el commit del juego del 2026-10-07
+ * (máximo 1900); no se sabe desde qué compilación exacta: una sesión Difícil guardada con el límite de 40 s se
+ * mide contra 1900, hasta un 5 % por debajo de lo que habría dado con su límite de entonces.
  *
  * Por eso el puntaje crudo NO es comparable entre niveles: el mismo desempeño vale menos puntos en un
  * nivel más difícil. Expresarlo como % del máximo de SU nivel sí lo es.
  */
 const CAFETERO_MAX_SCORE: Record<string, number | Partial<Record<NormalizedDifficulty, number>>> = {
   CoffeeCollection: { easy: 1000 + 20 * 120, medium: 1000 + 20 * 100, hard: 1000 + 20 * 80 },
-  CoffeeClassification: { easy: 1000 + 20 * 90, medium: 1000 + 20 * 60, hard: 1000 + 20 * 40 },
+  CoffeeClassification: { easy: 1000 + 20 * 90, medium: 1000 + 20 * 60, hard: 1000 + 20 * 45 },
   CoffeeTransportation: 1000,
   CoffeeElaboration: 1000,
   CoffeeWash: 1000,

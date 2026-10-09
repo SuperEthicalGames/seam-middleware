@@ -8,7 +8,13 @@ import type { GameId, NormalizedDifficulty } from '@/types/game'
  * Fuente: "VARIABLES POR DESARROLLO.xlsx" (tabla oficial de desarrollo, provista por
  * el cliente 2026-09-16) — cada valor es el techo de la banda de 1 estrella para ese
  * nivel (la duración más lenta que todavía da estrella; por debajo de eso ya no hay
- * referencia para "más lento"). Nunca se usó para calcular estrellas — ver
+ * referencia para "más lento"). En Cafetero esos techos eran los límites de tiempo
+ * del juego, y siguen siéndolo en Recolección (120/100/80) y Elaboración (80/60/45);
+ * cuando el juego cambió un límite se cambió también aquí, porque una victoria más
+ * lenta que la referencia quedaría en 0 % igual que una apenas lenta: Lavado pasó de
+ * 40/30/25 a 60/50/40 y Clasificación Difícil de 40 a 45 (assets de ajustes del juego,
+ * app 1.4.1). Transporte ya no tiene reloj en el juego: conserva el valor de la hoja.
+ * Nunca se usó para calcular estrellas — ver
  * estimatedStars.ts y DATA_MAPPING.md sección 3: las estrellas reales de Amazonas/
  * Cartagena (68 registros reales validados) dependen solo del puntaje, nunca del
  * tiempo, así que este archivo es una métrica nueva e independiente ("velocidad"),
@@ -19,8 +25,8 @@ type DifficultyDurationTable = Partial<Record<NormalizedDifficulty, number>>
 const CAFETERO_DURATION_REFERENCE: Record<string, DifficultyDurationTable> = {
   CoffeeCollection: { easy: 120, medium: 100, hard: 80 },
   CoffeeTransportation: { easy: 280, medium: 210, hard: 160 },
-  CoffeeClassification: { easy: 90, medium: 60, hard: 40 },
-  CoffeeWash: { easy: 40, medium: 30, hard: 25 },
+  CoffeeClassification: { easy: 90, medium: 60, hard: 45 },
+  CoffeeWash: { easy: 60, medium: 50, hard: 40 },
   CoffeeElaboration: { easy: 80, medium: 60, hard: 45 },
 }
 
