@@ -2,6 +2,7 @@ import { GAME_IDS } from '@/config/games'
 import { adapterRegistry } from '@/adapters'
 import type { GameId, NormalizedDifficulty, NormalizedSession, NormalizedUser } from '@/types/game'
 import { toFriendlyMessage } from '@/utils/errors'
+import { isPracticeAccount } from '@/utils/practiceAccount'
 import { computeDifficultyDistribution } from '@/utils/patientStats'
 import {
   computePopulationExercisePerformance,
@@ -18,6 +19,8 @@ export interface GameSummary {
   totalUsers: number
   usersWithActivity: number
   totalSessions: number
+  /** Intentos de la cuenta de familiarización (Cafetero): no cuentan en los totales de arriba ni en los gráficos. */
+  practiceSessions: number
   totalSerials: number
   activeSerials: number
   inactiveSerials: number
@@ -61,8 +64,14 @@ export async function loadDashboardData(): Promise<DashboardData> {
   await Promise.all(
     GAME_IDS.map(async (game) => {
       try {
-        const [users, serials] = await Promise.all([adapterRegistry[game].getUsers(), adapterRegistry[game].getSerials()])
+        const [allUsers, serials] = await Promise.all([adapterRegistry[game].getUsers(), adapterRegistry[game].getSerials()])
+        // La cuenta de familiarización no es una persona: sus intentos se cuentan aparte (ver practiceAccount.ts)
+        const users = allUsers.filter((u: NormalizedUser) => !isPracticeAccount(u.identifier))
+        const practiceUsers = allUsers.filter((u: NormalizedUser) => isPracticeAccount(u.identifier) && u.hasActivity)
         const usersWithActivity = users.filter((u: NormalizedUser) => u.hasActivity)
+        const practiceSessions = (
+          await Promise.all(practiceUsers.map((u) => adapterRegistry[game].getUserSessions(u.uid).catch(() => [])))
+        ).reduce((acc, s) => acc + s.length, 0)
 
         const sessionsPerUser = await Promise.all(
           usersWithActivity.map(async (u) => ({
@@ -85,6 +94,7 @@ export async function loadDashboardData(): Promise<DashboardData> {
           totalUsers: users.length,
           usersWithActivity: usersWithActivity.length,
           totalSessions: sessionsByGame[game].length,
+          practiceSessions,
           totalSerials: serials.length,
           activeSerials: serials.filter((s) => s.active).length,
           inactiveSerials: serials.filter((s) => !s.active).length,
@@ -97,6 +107,7 @@ export async function loadDashboardData(): Promise<DashboardData> {
           totalUsers: 0,
           usersWithActivity: 0,
           totalSessions: 0,
+          practiceSessions: 0,
           totalSerials: 0,
           activeSerials: 0,
           inactiveSerials: 0,
