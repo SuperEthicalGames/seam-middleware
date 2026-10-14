@@ -9,6 +9,7 @@ import { ErrorState, TableSkeleton, EmptyState } from '@/components/States'
 import { FilterBar } from '@/components/FilterBar'
 import { SessionsTable } from '@/components/SessionsTable'
 import { PatientPerformanceSummary } from '@/components/PatientPerformanceSummary'
+import { ResumeSessionCard } from '@/components/ResumeSessionCard'
 import { PatientConclusions } from '@/components/PatientConclusions'
 import { EMPTY_FILTERS, applySessionFilters } from '@/utils/sessionFilters'
 import { generatePatientReportPdf } from '@/reports/PatientReport'
@@ -97,6 +98,8 @@ export function PatientProfile() {
           {r.state === 'ERROR' && <ErrorState message={r.errorMessage ?? `No fue posible consultar ${GAME_CATALOG[r.game].displayName}.`} onRetry={reload} />}
           {r.state === 'FOUND' && (
             <>
+              {/* La cuenta de familiarización reúne a muchos visitantes: "dónde continúa" no tiene sentido ahí. */}
+              {!isPracticeAccount(data.identifier) && <ResumeSessionCard sessions={r.sessions} game={r.game} />}
               <PatientPerformanceSummary sessions={r.filteredSessions} game={r.game} />
               <SessionsTable sessions={r.filteredSessions} />
             </>
