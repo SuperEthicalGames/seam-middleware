@@ -19,7 +19,6 @@ const GamesList = lazy(() => import('@/pages/GamesList').then((m) => ({ default:
 const GameDetail = lazy(() => import('@/pages/GameDetail').then((m) => ({ default: m.GameDetail })))
 const Serials = lazy(() => import('@/pages/Serials').then((m) => ({ default: m.Serials })))
 const Exportar = lazy(() => import('@/pages/Exportar').then((m) => ({ default: m.Exportar })))
-const AgendaSesion = lazy(() => import('@/pages/AgendaSesion').then((m) => ({ default: m.AgendaSesion })))
 const Admins = lazy(() => import('@/pages/Admins').then((m) => ({ default: m.Admins })))
 const AuditLog = lazy(() => import('@/pages/AuditLog').then((m) => ({ default: m.AuditLog })))
 const Profile = lazy(() => import('@/pages/Profile').then((m) => ({ default: m.Profile })))
@@ -51,7 +50,6 @@ export function App() {
                 <Route path="/juegos" element={<GamesList />} />
                 <Route path="/juegos/:gameId" element={<GameDetail />} />
                 <Route path="/seriales" element={<Serials />} />
-                <Route path="/agenda" element={<AgendaSesion />} />
                 <Route path="/exportar" element={<Exportar />} />
                 <Route path="/administradores" element={<Admins />} />
                 <Route path="/auditoria" element={<AuditLog />} />
