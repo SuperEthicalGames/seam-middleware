@@ -50,6 +50,18 @@
             "offPathSeconds":  { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 7200" },
             "firstActionSeconds": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 7200" },
 
+            "swayAvgCm":       { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1000" },
+            "swayMaxCm":       { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1000" },
+            "progressPercent": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100" },
+            "maxScore":        { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100000" },
+            "scoreProgress":   { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100000" },
+            "scoreTime":       { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100000" },
+            "scorePenalty":    { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100000" },
+            "timeLimitSeconds": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 7200" },
+            "checkpointSeconds": {
+              "$i": { ".validate": "$i.matches(/^[0-9]{1,2}$/) && newData.isNumber() && newData.val() >= 0 && newData.val() <= 7200" }
+            },
+
             "$other": { ".validate": false }
           }
         },
