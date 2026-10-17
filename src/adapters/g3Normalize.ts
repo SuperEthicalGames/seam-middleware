@@ -1,4 +1,4 @@
-import type { G3ResultEntry, G3User, NormalizedSession, NormalizedUser, SessionMetrics } from '@/types/game'
+import type { G3ResultEntry, G3User, NormalizedSession, NormalizedUser, ScoreBreakdown, SessionMetrics } from '@/types/game'
 import { normalizeDifficulty, parseDdMmYyyy, parseIdentifier, parseDurationToSeconds } from '@/utils/normalize'
 import { compareChronologically } from '@/utils/sessionOrder'
 
@@ -56,8 +56,31 @@ function metricsOf(entry: G3ResultEntry): SessionMetrics | null {
     drops: count(entry.drops),
     offPathSeconds: count(entry.offPathSeconds),
     firstActionSeconds: count(entry.firstActionSeconds),
+    swayAvgCm: count(entry.swayAvgCm),
+    swayMaxCm: count(entry.swayMaxCm),
   }
   return Object.values(metrics).some((v) => v !== null) ? metrics : null
+}
+
+/** Los segundos de cada avance: Firebase devuelve un arreglo cuando las claves son consecutivas desde 0, y un objeto si no. Solo números finitos y no negativos, en orden. */
+function checkpointsOf(value: unknown): number[] {
+  const items = Array.isArray(value) ? value : value && typeof value === 'object' ? Object.entries(value as Record<string, unknown>).sort((a, b) => Number(a[0]) - Number(b[0])).map(([, v]) => v) : []
+  return items.map((v) => count(v)).filter((v): v is number => v !== null)
+}
+
+/** null si el intento no trae nada del modelo 3: una partida anterior, o un módulo que no guardó el detalle. */
+function breakdownOf(entry: G3ResultEntry): ScoreBreakdown | null {
+  const breakdown: ScoreBreakdown = {
+    progressPercent: count(entry.progressPercent),
+    maxScore: count(entry.maxScore),
+    scoreProgress: count(entry.scoreProgress),
+    scoreTime: count(entry.scoreTime),
+    scorePenalty: count(entry.scorePenalty),
+    timeLimitSeconds: count(entry.timeLimitSeconds),
+    checkpointSeconds: checkpointsOf(entry.checkpointSeconds),
+  }
+  const hasAny = breakdown.checkpointSeconds.length > 0 || Object.entries(breakdown).some(([key, v]) => key !== 'checkpointSeconds' && v !== null)
+  return hasAny ? breakdown : null
 }
 
 export function entryToG3Session(uid: string, key: string, entry: G3ResultEntry): NormalizedSession {
@@ -83,6 +106,7 @@ export function entryToG3Session(uid: string, key: string, entry: G3ResultEntry)
     attempt: count(entry.attempt),
     device: text(entry.device),
     metrics: metricsOf(entry),
+    breakdown: breakdownOf(entry),
   }
 }
 

@@ -90,6 +90,39 @@ describe('normalizeG3Sessions con los campos que guarda la app reciente', () => 
     expect(s.metrics?.reTouch).toBe(4)
   })
 
+  it('modelo 3: lee de qué se formó el puntaje, el avance, los segundos de cada unidad y el balanceo', () => {
+    const raw: G3User = {
+      CC: '1',
+      results: {
+        game01: {
+          experience: 'CoffeeWash', difficulty: 'Hard', score: 1420, isWin: true, scoreModel: 3, timeSeconds: 30,
+          progressPercent: 100, maxScore: 1400, scoreProgress: 1000, scoreTime: 520, scorePenalty: 100, timeLimitSeconds: 40,
+          checkpointSeconds: [4.2, 9.8, 15.1],
+        },
+        game02: {
+          experience: 'CoffeeTransportation', difficulty: 'Easy', score: 640, isWin: false, scoreModel: 3,
+          swayAvgCm: 7.5, swayMaxCm: 22.4, progressPercent: 64, maxScore: 1560, timeLimitSeconds: 0,
+          // Firebase devuelve un objeto con claves, no un arreglo, cuando faltan índices
+          checkpointSeconds: { '2': 12.5, '0': 3, '1': 7.25 },
+        },
+      },
+    }
+    const sessions = normalizeG3Sessions('uid1', raw)
+    const wash = sessions.find((x) => x.exercise === 'CoffeeWash')!
+    expect(wash.breakdown).toEqual({ progressPercent: 100, maxScore: 1400, scoreProgress: 1000, scoreTime: 520, scorePenalty: 100, timeLimitSeconds: 40, checkpointSeconds: [4.2, 9.8, 15.1] })
+    const walk = sessions.find((x) => x.exercise === 'CoffeeTransportation')!
+    expect(walk.metrics?.swayAvgCm).toBe(7.5)
+    expect(walk.metrics?.swayMaxCm).toBe(22.4)
+    expect(walk.breakdown?.checkpointSeconds).toEqual([3, 7.25, 12.5])
+    expect(walk.breakdown?.timeLimitSeconds).toBe(0)
+    expect(walk.breakdown?.scoreTime).toBeNull()
+  })
+
+  it('una partida anterior al modelo 3 no tiene desglose (null, no un objeto de ceros)', () => {
+    const [s] = normalizeG3Sessions('uid1', recent)
+    expect(s.breakdown).toBeNull()
+  })
+
   it('usa timeSeconds (con decimales) en vez del texto redondeado', () => {
     const [s] = normalizeG3Sessions('uid1', recent)
     expect(s.durationSeconds).toBe(25.37)
