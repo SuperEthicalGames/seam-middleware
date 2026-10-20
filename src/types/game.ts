@@ -25,6 +25,9 @@ export interface G12RecordEntry {
   score?: number
   stars?: number
   timing?: string // 'M:SS seconds'
+  timestampUtc?: string // desde la versión 3.6 de Amazonas: reloj del visor al terminar el intento, ISO 8601
+  recordId?: string // identificador único del intento (desde Amazonas 3.6)
+  appVersion?: string // versión de la app que guardó el intento (desde Amazonas 3.6)
 }
 
 export interface G12User {
@@ -43,6 +46,7 @@ export interface G3ResultEntry {
   difficulty?: string // 'Easy' | 'Medium' | 'Hard'
   experience?: string // 'CoffeeWash' | 'CoffeeClassification' | ...
   score?: number
+  stars?: number // solo Amazonas (desde su versión 3.7): 0 a 3, 0 = intento perdido; Cafetero no guarda estrellas
   time?: string // 'M:SS seconds', opcional — NO se llama 'timing' como en G1/G2
 
   // Campos que la app de Cafetero guarda desde su versión 1.2.x — ausentes en partidas anteriores.

@@ -45,3 +45,11 @@ publicar sin haber confirmado el paso 4.
 ## Capa de administradores (los tres archivos)
 
 Los tres archivos incluyen, idénticos, `owners`, `admins` y `adminRequests`: quién puede leer cada juego desde el portal y cómo se da de alta. El primer propietario sale solo: la cuenta del correo raíz (el mismo que `GAME_BOOTSTRAP_OWNER_EMAIL` en el portal) puede escribir su propio `owners/{uid}` cuando Firebase confirmó el correo; los demás propietarios y administradores los crea el portal. Una prueba (`src/config/rulesLayer.test.ts`) falla si un archivo cambia y los otros no, o si el correo raíz no coincide, y `npm run test:rules` (emuladores, Java 17+) la ejecuta contra las tres. Por sí sola la capa **no cierra** `users`, `serials` ni `identificators` en Amazonas y Cartagena: siguen en `auth != null` hasta que sus aplicaciones estén listas (el orden obligatorio de arriba). Detalle de uso y activación en `LIMITATIONS.md` sección 13.
+
+## Amazonas 3.6: archivo propio para el proyecto nuevo (2026-10-17)
+
+`amazonas.rules.json` ya no es la versión mínima (`auth != null`): es el modelo de Cafetero adaptado a los datos de Amazonas (`users/{uid}/cedula`, `record`, `results`, `serials`, `identificators`, `meta/nextDeviceIndex`) más la capa `owners/admins/adminRequests` idéntica a la de los otros dos. Es el mismo archivo que `firebase/database.rules.json` del repositorio `SEAM-Amazonas`. Solo sirve para el proyecto de Firebase **nuevo** de Amazonas (el juego 3.6 funciona también con las Rules abiertas de `seam-data-as`, pero esas **no** tienen `meta`, así que un equipo nuevo se registra con la clave antigua). `cartagena.rules.json` sigue siendo la versión mínima.
+
+## Amazonas 3.7: el mismo modelo que Cafetero (2026-10-19)
+
+`amazonas.rules.json` es ahora **el mismo archivo que `cafetero.rules.json` salvo dos líneas**: el patrón de `experience` (`exercise1..3` en lugar de `Coffee…`) y el campo `stars` (0 a 3). Los datos son `users/{uid}/CC` y `users/{uid}/results/gameNN`; ya no existen `cedula`, `record` ni `results/{ejercicio}/difficult` en las cuentas nuevas. Sigue siendo el mismo archivo que `firebase/database.rules.json` del repositorio `SEAM-Amazonas`.

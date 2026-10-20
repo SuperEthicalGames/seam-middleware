@@ -1,10 +1,13 @@
-import type { G3ResultEntry, G3User, NormalizedSession, NormalizedUser, ScoreBreakdown, SessionMetrics } from '@/types/game'
+import type { G3ResultEntry, G3User, GameId, NormalizedSession, NormalizedUser, ScoreBreakdown, SessionMetrics } from '@/types/game'
 import { normalizeDifficulty, parseDdMmYyyy, parseIdentifier, parseDurationToSeconds } from '@/utils/normalize'
 import { compareChronologically } from '@/utils/sessionOrder'
 
-/** Normalización propia de Game 3 — ver DATA_MAPPING.md, forma distinta a G1/G2. */
+/**
+ * Normalización de la forma de los juegos de SEAM con el sistema unificado (`users/{uid}/CC` + `users/{uid}/results/gameNN`): Cafetero y, desde su
+ * versión 3.7, Amazonas — ver DATA_MAPPING.md, forma distinta a la de G1/G2 antiguos. El juego se indica con `game`; `normalizeG3*` son los atajos de Cafetero.
+ */
 
-export function normalizeG3User(uid: string, raw: G3User | null): NormalizedUser | null {
+export function normalizeSeamUser(game: GameId, uid: string, raw: G3User | null): NormalizedUser | null {
   if (!raw) return null
   // `CC` es el campo dominante en Game 3, pero se verificó al menos un registro real
   // con `cedula` en vez de (o además de) `CC` — se usa como fallback, nunca se inventa
@@ -12,12 +15,16 @@ export function normalizeG3User(uid: string, raw: G3User | null): NormalizedUser
   const identifier = parseIdentifier(raw.CC) ?? parseIdentifier(raw.cedula)
   if (identifier === null) return null
   return {
-    game: 'game3',
+    game,
     uid,
     identifier,
     hasActivity: Boolean(raw.results),
     lastActivityDate: latestResultDate(raw.results),
   }
+}
+
+export function normalizeG3User(uid: string, raw: G3User | null): NormalizedUser | null {
+  return normalizeSeamUser('game3', uid, raw)
 }
 
 /** Fecha ISO más reciente entre las entradas de `results` — null si no hay ninguna parseable. */
@@ -83,9 +90,9 @@ function breakdownOf(entry: G3ResultEntry): ScoreBreakdown | null {
   return hasAny ? breakdown : null
 }
 
-export function entryToG3Session(uid: string, key: string, entry: G3ResultEntry): NormalizedSession {
+export function entryToSeamSession(game: GameId, uid: string, key: string, entry: G3ResultEntry): NormalizedSession {
   return {
-    game: 'game3',
+    game,
     uid,
     sourcePath: `results.${key}`,
     date: parseDdMmYyyy(entry.date),
@@ -95,7 +102,8 @@ export function entryToG3Session(uid: string, key: string, entry: G3ResultEntry)
     difficulty: normalizeDifficulty(entry.difficulty),
     exercise: entry.experience ?? null,
     score: typeof entry.score === 'number' ? entry.score : null,
-    stars: null, // Game 3 no tiene el concepto de estrellas en los datos reales
+    // Cafetero no guarda estrellas (null); Amazonas sí (0 a 3, 0 = intento perdido)
+    stars: count(entry.stars),
     // `time` redondea a segundos enteros; `timeSeconds` (partidas recientes) trae los decimales
     durationSeconds: count(entry.timeSeconds) ?? parseDurationToSeconds(entry.time),
     durationRaw: entry.time ?? null,
@@ -110,10 +118,18 @@ export function entryToG3Session(uid: string, key: string, entry: G3ResultEntry)
   }
 }
 
+export function entryToG3Session(uid: string, key: string, entry: G3ResultEntry): NormalizedSession {
+  return entryToSeamSession('game3', uid, key, entry)
+}
+
 /** Más reciente primero, igual que los otros adapters. */
-export function normalizeG3Sessions(uid: string, raw: G3User | null): NormalizedSession[] {
+export function normalizeSeamSessions(game: GameId, uid: string, raw: G3User | null): NormalizedSession[] {
   if (!raw?.results) return []
   return Object.entries(raw.results)
-    .map(([key, entry]) => entryToG3Session(uid, key, entry))
+    .map(([key, entry]) => entryToSeamSession(game, uid, key, entry))
     .sort((a, b) => compareChronologically(b, a))
+}
+
+export function normalizeG3Sessions(uid: string, raw: G3User | null): NormalizedSession[] {
+  return normalizeSeamSessions('game3', uid, raw)
 }

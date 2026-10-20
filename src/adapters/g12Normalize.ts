@@ -24,9 +24,9 @@ function entryToSession(game: GameId, uid: string, sourcePath: string, entry: G1
     stars: typeof entry.stars === 'number' ? entry.stars : null,
     durationSeconds: parseDurationToSeconds(entry.timing),
     durationRaw: entry.timing ?? null,
-    // Amazonas y Cartagena no guardan nada de esto
+    // Amazonas y Cartagena no guardan si se ganó; Amazonas 3.6 guarda el reloj del visor y las versiones anteriores no
     isWin: null,
-    timestampUtc: null,
+    timestampUtc: entry.timestampUtc ?? null,
     scoreModel: null,
     sessionId: null,
     attempt: null,

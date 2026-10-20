@@ -44,6 +44,8 @@ Valor: **number**, `0` o `1` (no booleano). 25/25 claves observadas devuelven `0
 
 `identificators` (25) y `serials` (25) tienen el mismo conteo → mapeo 1:1 observado hash→serial.
 
+**Actualización 2026-10-17 (Amazonas 3.6, Unity 6):** `record.gameNN` ahora trae además `timestampUtc` (ISO 8601, reloj del visor), `recordId` (identificador único del intento) y `appVersion`; `date` y `hour` salen los dos del reloj del visor (hasta la 3.5 la fecha era UTC y la hora local: una partida después de las 7 p. m. en Colombia quedaba con la fecha del día siguiente). `results.<ejercicio>.difficult.<nivel>` se actualiza campo por campo (antes se reescribía el nodo y un intento peor borraba el mejor resultado). Los equipos nuevos se registran solos igual que en Cafetero: `identificators/gameNN` = serial y `serials/{serial}` = `false` hasta que un administrador lo activa; los datos anteriores usan `0`/`1` y una clave hash en `identificators`, y se siguen leyendo. Las Rules propuestas están en `game-database-rules/amazonas.rules.json` (sin publicar).
+
 ---
 
 ## 2. GAME 2 — `seam-data-cartagena` ("Cartagena")
@@ -176,3 +178,5 @@ NormalizedSerial {
 ```
 
 Ningún campo se inventa: si el origen no tiene el dato, el campo normalizado queda `null`/ausente y la UI debe mostrar "no disponible", nunca un valor por defecto silencioso.
+
+**Actualización 2026-10-19 (Amazonas 3.7):** Amazonas guarda la forma de Cafetero (`CC`, `results/gameNN` plano, más `stars`); se lee con `g3Normalize.ts` a través de `amazonasNormalize.ts`, que también entiende la forma de la primera versión. Ver `LIMITATIONS.md` sección 17.
