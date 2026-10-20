@@ -75,13 +75,28 @@ describe('Game1Adapter', () => {
 
   describe('getSerials', () => {
     it('mapea 0/1 a active boolean conservando el rawValue original', async () => {
-      mockedGet.mockResolvedValueOnce(makeSnapshot({ codeA: 1, codeB: 0 }))
+      mockedGet.mockResolvedValueOnce(makeSnapshot({ codeA: 1, codeB: 0 })).mockResolvedValueOnce(makeSnapshot(null))
 
       const serials = await adapter.getSerials()
 
       expect(serials).toEqual([
         { game: 'game1', code: 'codeA', active: true, rawValue: 1 },
         { game: 'game1', code: 'codeB', active: false, rawValue: 0 },
+      ])
+    })
+
+    it('acepta true/false de los equipos que se registran solos y les pone la etiqueta gameNN de identificators', async () => {
+      mockedGet
+        .mockResolvedValueOnce(makeSnapshot({ serialNuevo: false, serialActivo: true, serialViejo: 1 }))
+        .mockResolvedValueOnce(makeSnapshot({ game00: 'serialActivo', game01: 'serialNuevo', hashAntiguo: 'serialViejo' }))
+
+      const serials = await adapter.getSerials()
+
+      expect(serials).toEqual([
+        { game: 'game1', code: 'serialNuevo', active: false, rawValue: false, label: 'game01' },
+        { game: 'game1', code: 'serialActivo', active: true, rawValue: true, label: 'game00' },
+        // la clave antigua es un hash, no una etiqueta gameNN
+        { game: 'game1', code: 'serialViejo', active: true, rawValue: 1 },
       ])
     })
   })
@@ -102,6 +117,20 @@ describe('Game1Adapter', () => {
 
       expect(result).toEqual({ code: 'abc123', previousValue: 0, newValue: 1 })
       expect(mockedUpdate).toHaveBeenCalledWith(expect.anything(), { 'serials/abc123': 1 })
+    })
+
+    it('respeta el tipo booleano de los equipos nuevos: activar escribe true, desactivar escribe false', async () => {
+      mockedGet.mockResolvedValueOnce(makeSnapshot(false))
+      mockedUpdate.mockResolvedValueOnce(undefined)
+      const on = await adapter.setSerialStatus('nuevo', true)
+      expect(on).toEqual({ code: 'nuevo', previousValue: 0, newValue: 1 })
+      expect(mockedUpdate).toHaveBeenLastCalledWith(expect.anything(), { 'serials/nuevo': true })
+
+      mockedGet.mockResolvedValueOnce(makeSnapshot(true))
+      mockedUpdate.mockResolvedValueOnce(undefined)
+      const off = await adapter.setSerialStatus('nuevo', false)
+      expect(off).toEqual({ code: 'nuevo', previousValue: 1, newValue: 0 })
+      expect(mockedUpdate).toHaveBeenLastCalledWith(expect.anything(), { 'serials/nuevo': false })
     })
 
     it('desactivar (false) escribe 0', async () => {

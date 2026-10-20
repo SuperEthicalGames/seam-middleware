@@ -57,3 +57,23 @@ describe('normalizeG12Sessions', () => {
     expect(normalizeG12Sessions('game1', 'uid2', userWithoutActivity)).toEqual([])
   })
 })
+
+describe('Amazonas 3.6: el intento trae el reloj del visor', () => {
+  it('timestampUtc llega a la sesión cuando el juego lo guardó y es null en los datos anteriores', () => {
+    const user: G12User = {
+      cedula: '900000010',
+      record: {
+        game01: { date: '11/07/2025', hour: '09:48:20', difficulty: 'EASY', experience: 'exercise1', score: 80, stars: 3, timing: '3:10 seconds' },
+        game02: {
+          date: '17/10/2026', hour: '20:15:00', difficulty: 'EASY', experience: 'exercise1', score: 90, stars: 3, timing: '2:00 seconds',
+          timestampUtc: '2026-10-18T01:15:00.0000000Z', recordId: 'abc', appVersion: '3.6.0',
+        },
+      },
+    }
+
+    const sessions = normalizeG12Sessions('game1', 'uid10', user)
+
+    expect(sessions.find((s) => s.sourcePath === 'record.game01')?.timestampUtc).toBeNull()
+    expect(sessions.find((s) => s.sourcePath === 'record.game02')?.timestampUtc).toBe('2026-10-18T01:15:00.0000000Z')
+  })
+})

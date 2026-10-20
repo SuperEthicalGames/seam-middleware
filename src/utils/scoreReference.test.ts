@@ -63,6 +63,21 @@ describe('sessionScorePercent', () => {
     expect(s({ exercise: 'CoffeeWash', score: 750, scoreModel: 2 })).toBe(75)
   })
 
+  it('modelo 3: mide contra el mejor puntaje que el propio resultado trae (maxScore), no contra la tabla', () => {
+    // Lavado Fácil: 1000 + 10 × 60 s = 1600; antes puntuaba sobre 1000
+    expect(s({ exercise: 'CoffeeWash', difficulty: 'easy', score: 1050, scoreModel: 3, breakdown: { maxScore: 1600 } })).toBe(66)
+    expect(s({ exercise: 'CoffeeWash', difficulty: 'easy', score: 1600, scoreModel: 3, breakdown: { maxScore: 1600 } })).toBe(100)
+    // Recorrido y Cocina igual; un puntaje que supera 1000 ya no se corta en 100 por la tabla vieja
+    expect(s({ exercise: 'CoffeeTransportation', difficulty: 'easy', score: 1360, scoreModel: 3, breakdown: { maxScore: 1560 } })).toBe(87)
+    expect(s({ exercise: 'CoffeeElaboration', difficulty: 'hard', score: 1450, scoreModel: 3, breakdown: { maxScore: 1450 } })).toBe(100)
+  })
+
+  it('modelo 3 sin maxScore (o un maxScore absurdo) vuelve a la tabla; un modelo anterior ignora el maxScore', () => {
+    expect(s({ exercise: 'CoffeeCollection', difficulty: 'easy', score: 1700, scoreModel: 3, breakdown: null })).toBe(50)
+    expect(s({ exercise: 'CoffeeCollection', difficulty: 'easy', score: 1700, scoreModel: 3, breakdown: { maxScore: 0 } })).toBe(50)
+    expect(s({ exercise: 'CoffeeTransportation', difficulty: 'easy', score: 500, scoreModel: 2, breakdown: { maxScore: 2000 } })).toBe(50)
+  })
+
   it('Lavado de una compilación anterior no tiene rendimiento: valía 100 en toda victoria', () => {
     expect(s({ exercise: 'CoffeeWash', score: 100, scoreModel: null })).toBeNull()
     expect(s({ exercise: 'CoffeeWash', score: 100, scoreModel: 1 })).toBeNull()

@@ -4,13 +4,14 @@ import type { GameCatalogEntry, GameId } from '@/types/game'
 // (project_id / android package name): seam-data-as -> com.agencycic.amazonas,
 // seam-data-cartagena -> com.agencycic.cartagena, seam-data-game -> com.agencycic.cafetero.
 // Cafetero se mudó el 2026-10-08 a seam-ejecafetero-ae869 (package com.seam.ejecafetero).
+// Amazonas se mudó el 2026-10-17 a seam-as-1601a (package com.seam.amazonas).
 // No son nombres inventados por el portal; si el cliente usa otro nombre comercial
 // públicamente, actualizar aquí es el único cambio necesario (sección 56 del prompt).
 export const GAME_CATALOG: Record<GameId, GameCatalogEntry> = {
   game1: {
     id: 'game1',
     displayName: 'Amazonas',
-    databaseUrl: 'https://seam-data-as-default-rtdb.firebaseio.com',
+    databaseUrl: 'https://seam-as-1601a-default-rtdb.firebaseio.com',
     enabled: true,
   },
   game2: {
@@ -33,10 +34,10 @@ export const GAME_IDS: GameId[] = ['game1', 'game2', 'game3']
  * Si las Rules de ese juego ya exigen una sesión de administrador para LEER (capa owners / admins / adminRequests de game-database-rules/*.rules.json).
  *  - true: el portal inicia sesión en la base del juego con la cuenta del administrador y pide la conexión que falte (Cafetero, ya publicado).
  *  - false: el juego sigue con sus Rules actuales y el portal lo consulta como hasta ahora, sin pedir nada más. Su lectura no depende de la capa.
- * Amazonas y Cartagena pasan a true cuando publiquen sus Rules cerradas (ver game-database-rules/README.md): es el único cambio que hace falta.
+ * Cartagena pasa a true cuando publique sus Rules cerradas (ver game-database-rules/README.md): es el único cambio que hace falta. Amazonas ya lo está (proyecto nuevo).
  */
 export const GAME_REQUIRES_ADMIN: Record<GameId, boolean> = {
-  game1: false,
+  game1: true, // Amazonas: el proyecto nuevo (seam-as-1601a) solo se lee con una sesión de administrador, igual que Cafetero
   game2: false,
   game3: true,
 }

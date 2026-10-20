@@ -25,6 +25,9 @@ export interface G12RecordEntry {
   score?: number
   stars?: number
   timing?: string // 'M:SS seconds'
+  timestampUtc?: string // desde la versión 3.6 de Amazonas: reloj del visor al terminar el intento, ISO 8601
+  recordId?: string // identificador único del intento (desde Amazonas 3.6)
+  appVersion?: string // versión de la app que guardó el intento (desde Amazonas 3.6)
 }
 
 export interface G12User {
@@ -43,6 +46,7 @@ export interface G3ResultEntry {
   difficulty?: string // 'Easy' | 'Medium' | 'Hard'
   experience?: string // 'CoffeeWash' | 'CoffeeClassification' | ...
   score?: number
+  stars?: number // solo Amazonas (desde su versión 3.7): 0 a 3, 0 = intento perdido; Cafetero no guarda estrellas
   time?: string // 'M:SS seconds', opcional — NO se llama 'timing' como en G1/G2
 
   // Campos que la app de Cafetero guarda desde su versión 1.2.x — ausentes en partidas anteriores.
@@ -72,6 +76,18 @@ export interface G3ResultEntry {
   drops?: number
   offPathSeconds?: number
   firstActionSeconds?: number
+
+  // Desde `scoreModel: 3`: de qué se formó el puntaje y datos del avance (ver firebase/README.md del juego)
+  progressPercent?: number
+  maxScore?: number
+  scoreProgress?: number
+  scoreTime?: number
+  scorePenalty?: number
+  timeLimitSeconds?: number
+  swayAvgCm?: number
+  swayMaxCm?: number
+  /** Firebase guarda la lista como objeto con claves "0", "1"…, o como arreglo si son consecutivas */
+  checkpointSeconds?: number[] | Record<string, number>
 }
 
 export interface G3User {
@@ -134,6 +150,27 @@ export interface SessionMetrics {
   offPathSeconds: number | null
   /** Segundos desde el inicio del intento hasta la primera acción útil. */
   firstActionSeconds: number | null
+  /** Transporte: cuánto se alejó la cabeza de la línea (cm), en promedio y como máximo. */
+  swayAvgCm?: number | null
+  swayMaxCm?: number | null
+}
+
+/**
+ * De qué se formó el puntaje de un intento (desde `scoreModel: 3`, los cinco minijuegos de Cafetero puntúan con la misma suma):
+ * puntaje = base × lo que se hizo + segundos que sobraron × puntos por segundo (solo si se ganó) − errores.
+ */
+export interface ScoreBreakdown {
+  /** Cuánto del ejercicio se hizo, 0 a 100 (un intento ganado es 100). */
+  progressPercent: number | null
+  /** El mejor puntaje que podía dar ese nivel: `score / maxScore` es el puntaje como parte de su nivel. */
+  maxScore: number | null
+  scoreProgress: number | null
+  scoreTime: number | null
+  scorePenalty: number | null
+  /** Segundos que dio el nivel (0 si no tiene reloj). */
+  timeLimitSeconds: number | null
+  /** El segundo del intento en que se completó cada unidad (grano, camino, momento de la receta), en orden. */
+  checkpointSeconds: number[]
 }
 
 export interface NormalizedSession {
@@ -162,6 +199,8 @@ export interface NormalizedSession {
   device: string | null
   /** null si el juego no guardó ninguna métrica del intento. */
   metrics: SessionMetrics | null
+  /** Solo en partidas del modelo 3 de Cafetero (null en las demás y siempre en Amazonas y Cartagena). */
+  breakdown?: ScoreBreakdown | null
 }
 
 export interface NormalizedSerial {

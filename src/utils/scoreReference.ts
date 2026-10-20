@@ -62,7 +62,10 @@ const CAFETERO_MAX_SCORE: Record<string, number | Partial<Record<NormalizedDiffi
 /** Versión del significado del puntaje a partir de la cual Lavado puntúa por faltas (antes toda victoria valía 100). */
 const WASH_SCORE_MODEL_WITH_FAULTS = 2
 
-type PercentInput = Pick<NormalizedSession, 'game' | 'exercise' | 'difficulty' | 'score' | 'scoreModel'>
+/** Desde esta versión el juego guarda `maxScore` con cada resultado: el mejor puntaje de ese nivel, que ya no depende de una tabla de aquí. */
+const SCORE_MODEL_WITH_MAX_SCORE = 3
+
+type PercentInput = Pick<NormalizedSession, 'game' | 'exercise' | 'difficulty' | 'score' | 'scoreModel'> & { breakdown?: Pick<NonNullable<NormalizedSession['breakdown']>, 'maxScore'> | null }
 
 /**
  * Puntaje de una sesión como % del máximo alcanzable en su nivel (0-100, tope 100), o null si no tiene un
@@ -83,6 +86,12 @@ export function sessionScorePercent(s: PercentInput): number | null {
   if (s.game !== 'game3') return scoreToPercent(s.game, s.exercise, s.score)
 
   if (s.exercise === 'CoffeeWash' && (s.scoreModel ?? 1) < WASH_SCORE_MODEL_WITH_FAULTS) return null
+
+  // Modelo 3: el propio resultado dice cuál era el mejor puntaje de su nivel (los tres módulos que antes puntuaban sobre 1000 ahora suman bonus de tiempo)
+  const savedMax = s.breakdown?.maxScore ?? null
+  if ((s.scoreModel ?? 1) >= SCORE_MODEL_WITH_MAX_SCORE && savedMax !== null && savedMax > 0) {
+    return Math.max(0, Math.min(100, Math.round((s.score / savedMax) * 100)))
+  }
 
   const entry = s.exercise ? CAFETERO_MAX_SCORE[s.exercise] : undefined
   if (entry === undefined) return null
