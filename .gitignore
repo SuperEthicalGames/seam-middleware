@@ -27,3 +27,6 @@ serviceAccountKey.json
 
 npm-debug.log*
 database-debug.log
+
+# Vite
+.vite/

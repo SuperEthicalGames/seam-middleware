@@ -13,8 +13,9 @@ export function ChangePasswordForm({ onSuccess }: { onSuccess?: () => void }) {
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
     setFormError(null)
-    if (newPassword.length < 6) {
-      setFormError('La contraseña debe tener al menos 6 caracteres.')
+    // Estas cuentas ven cédulas de pacientes: más exigente que el mínimo de Firebase (6).
+    if (newPassword.length < 10) {
+      setFormError('La contraseña debe tener al menos 10 caracteres.')
       return
     }
     if (newPassword !== confirmPassword) {
