@@ -17,7 +17,10 @@ export function Logo({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) {
   )
 }
 
-/** Composición completa (corazón + wordmark + tagline) para contextos hero como el login. */
+/**
+ * Composición completa (corazón + wordmark + tagline) para contextos hero como el login. La imagen es un cuadrado opaco con fondo #080936 (seam-900), sin
+ * transparencia: úsala solo sobre seam-900 liso (sin degradado ni sombra detrás, un `drop-shadow` dibujaría el contorno del cuadrado).
+ */
 export function LogoHero({ className = 'h-40 w-40' }: { className?: string }) {
-  return <img src={`${import.meta.env.BASE_URL}seam-logo-full.webp`} alt="SEAM — Cuidamos lo mejor de ti" className={`${className} mx-auto drop-shadow-sm`} />
+  return <img src={`${import.meta.env.BASE_URL}seam-logo-full.webp`} alt="SEAM — Cuidamos lo mejor de ti" className={`${className} mx-auto`} />
 }
