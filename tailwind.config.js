@@ -4,7 +4,8 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Azul oscuro de la card de SEAM (T_Logo_SEAM.png, el fondo de la tarjeta de carga del juego): muestreado directo, #080b37 = seam-900.
+        // Azul oscuro de la card de SEAM (T_Logo_SEAM.png, el fondo de la tarjeta de carga del juego): #080936 = seam-900. Es también el fondo opaco de
+        // seam-heart.webp y seam-logo-full.webp, así que donde un logo se apoye sobre un degradado, la zona detrás del logo debe ser seam-900 liso (ver Login.tsx).
         seam: {
           50: '#f1f2fd',
           100: '#dfe0fb',
@@ -15,7 +16,7 @@ export default {
           600: '#101888',
           700: '#0c1164',
           800: '#090d4d',
-          900: '#080b37',
+          900: '#080936',
           950: '#04061e',
         },
         ink: {

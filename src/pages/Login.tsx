@@ -35,7 +35,9 @@ export function Login() {
 
   return (
     <div className="flex min-h-screen bg-white">
-      <div className="relative hidden w-[42%] shrink-0 overflow-hidden bg-gradient-to-br from-seam-500 via-seam-600 to-seam-800 lg:flex lg:flex-col lg:items-center lg:justify-center">
+      {/* El logo trae fondo opaco #080936 (seam-900): el degradado es radial y arranca en seam-900 liso (210px desde el centro, más que la media diagonal del logo de 192px)
+          para que el cuadrado del logo no se note; solo hacia los bordes del panel sube a seam-600. */}
+      <div className="relative hidden w-[42%] shrink-0 overflow-hidden bg-seam-900 bg-[radial-gradient(circle_farthest-corner_at_center,theme(colors.seam.900)_0px,theme(colors.seam.900)_210px,theme(colors.seam.600)_100%)] lg:flex lg:flex-col lg:items-center lg:justify-center">
         <div
           className="pointer-events-none absolute inset-0 opacity-[0.07]"
           style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, white 1.5px, transparent 0)', backgroundSize: '28px 28px' }}
