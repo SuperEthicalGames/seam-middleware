@@ -25,12 +25,13 @@ export const centralApp = initializeApp(firebaseConfig, 'central')
  * de Firebase y nunca en este repositorio. Vacía = App Check no se inicia y el portal funciona exactamente como antes.
  *
  * Orden para activarlo sin dejar a nadie afuera: 1) crear la clave de Fraud Defense / reCAPTCHA Enterprise para web (dominios `superethicalgames.github.io` y
- * `localhost`); 2) registrar la app web en App Check con esa clave; 3) pegar aquí la clave del sitio y desplegar; 4) mirar en App Check → APIs que casi
+ * `localhost`) en el MISMO proyecto de Google Cloud que la app de Firebase (`seam-middleware`) y con la API de reCAPTCHA Enterprise habilitada: si no, el
+ * intercambio del token falla con 400 "site key is from the same project as the one containing this app"; 2) registrar la app web en App Check con esa clave; 3) pegar aquí la clave del sitio y desplegar; 4) mirar en App Check → APIs que casi
  * todas las solicitudes a Realtime Database llegan "verificadas"; 5) solo entonces pulsar "Aplicar" en Realtime Database. Si se aplica antes del paso 3–4,
  * el portal deja de poder leer su base.
  * No se aplica en Authentication: `adminCreation.ts` crea cuentas con una segunda instancia de la app que no lleva App Check.
  */
-export const APP_CHECK_SITE_KEY = '6LcKmPstAAAAAGdxv-NH3866CXjCfcUAW_Wg1YxP'
+export const APP_CHECK_SITE_KEY = '6LfgdQAuAAAAAAVL7_DcENHZ2sBiuXxqfCZn33nu'
 /** 'enterprise' = Fraud Defense (reCAPTCHA Enterprise, el que Google ya recomienda: reCAPTCHA Classic figura como obsoleto); 'v3' = reCAPTCHA v3 clásico. Debe coincidir con el proveedor registrado en App Check. */
 export const APP_CHECK_PROVIDER: 'enterprise' | 'v3' = 'enterprise'
 
