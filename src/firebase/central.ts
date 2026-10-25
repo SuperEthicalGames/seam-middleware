@@ -20,8 +20,9 @@ export const firebaseConfig = {
 export const centralApp = initializeApp(firebaseConfig, 'central')
 
 /**
- * Clave del SITIO de reCAPTCHA v3 para App Check (es pública, como la `apiKey`; la clave SECRETA vive solo en la consola de Firebase, en App Check → Apps →
- * SEAM Middleware → reCAPTCHA, y nunca va en este repositorio). Vacía = App Check no se inicia y el portal funciona exactamente como antes.
+ * Clave del SITIO de reCAPTCHA Enterprise (Fraud Defense) para App Check (es pública, como la `apiKey`; reCAPTCHA Enterprise no tiene clave secreta que guardar
+ * en Firebase: en App Check → Apps → SEAM Middleware solo se registra esta misma clave). Con reCAPTCHA v3 clásico la clave SECRETA sí viviría solo en la consola
+ * de Firebase y nunca en este repositorio. Vacía = App Check no se inicia y el portal funciona exactamente como antes.
  *
  * Orden para activarlo sin dejar a nadie afuera: 1) crear la clave de Fraud Defense / reCAPTCHA Enterprise para web (dominios `superethicalgames.github.io` y
  * `localhost`); 2) registrar la app web en App Check con esa clave; 3) pegar aquí la clave del sitio y desplegar; 4) mirar en App Check → APIs que casi
@@ -29,7 +30,7 @@ export const centralApp = initializeApp(firebaseConfig, 'central')
  * el portal deja de poder leer su base.
  * No se aplica en Authentication: `adminCreation.ts` crea cuentas con una segunda instancia de la app que no lleva App Check.
  */
-export const APP_CHECK_SITE_KEY = ''
+export const APP_CHECK_SITE_KEY = '6LcKmPstAAAAAGdxv-NH3866CXjCfcUAW_Wg1YxP'
 /** 'enterprise' = Fraud Defense (reCAPTCHA Enterprise, el que Google ya recomienda: reCAPTCHA Classic figura como obsoleto); 'v3' = reCAPTCHA v3 clásico. Debe coincidir con el proveedor registrado en App Check. */
 export const APP_CHECK_PROVIDER: 'enterprise' | 'v3' = 'enterprise'
 
