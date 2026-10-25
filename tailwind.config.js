@@ -4,19 +4,19 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Extraída con muestreo de píxel directo del logo real de SEAM (#00b398 = seam-600).
+        // Azul oscuro de la card de SEAM (T_Logo_SEAM.png, el fondo de la tarjeta de carga del juego): muestreado directo, #080b37 = seam-900.
         seam: {
-          50: '#f3fcfa',
-          100: '#e2f8f5',
-          200: '#c1f0e9',
-          300: '#89e6d8',
-          400: '#44e4cc',
-          500: '#06dbba',
-          600: '#00b398',
-          700: '#008a75',
-          800: '#036859',
-          900: '#054d42',
-          950: '#052c26',
+          50: '#f1f2fd',
+          100: '#dfe0fb',
+          200: '#b6baf6',
+          300: '#767eee',
+          400: '#323de6',
+          500: '#1721be',
+          600: '#101888',
+          700: '#0c1164',
+          800: '#090d4d',
+          900: '#080b37',
+          950: '#04061e',
         },
         ink: {
           50: '#f5f7f8',
