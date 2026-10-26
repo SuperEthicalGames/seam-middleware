@@ -63,25 +63,19 @@ export function SessionsTable({ sessions, loading, error, onRetry }: { sessions:
             </span>
           )
         }
-        if (!stars.estimated) {
-          return (
-            <span title={`${stars.filled} de 3 estrellas`}>
-              {'★'.repeat(stars.filled)}
-              <span className="text-ink-200">{'★'.repeat(3 - stars.filled)}</span>
-            </span>
-          )
-        }
+        // Reales y estimadas se ven igual (doradas, sin etiqueta); la diferencia solo queda en el texto al pasar el cursor
         return (
-          <div>
-            <span
-              className="text-amber-500"
-              title="Estimado a partir del puntaje: esta partida de Cafetero es anterior a la versión que guarda las estrellas, este valor se calcula solo para referencia visual y no es un dato del juego."
-            >
-              {'★'.repeat(stars.filled)}
-              <span className="text-ink-200">{'★'.repeat(3 - stars.filled)}</span>
-            </span>
-            <div className="text-[10px] uppercase tracking-wide text-ink-400">estimado</div>
-          </div>
+          <span
+            className="text-amber-500"
+            title={
+              stars.estimated
+                ? `${stars.filled} de 3 estrellas, estimadas a partir del puntaje: esta partida de Cafetero es anterior a la versión que guarda las estrellas, no es un dato del juego.`
+                : `${stars.filled} de 3 estrellas`
+            }
+          >
+            {'★'.repeat(stars.filled)}
+            <span className="text-ink-200">{'★'.repeat(3 - stars.filled)}</span>
+          </span>
         )
       },
       sortValue: (s) => sessionStars(s)?.filled ?? -1,

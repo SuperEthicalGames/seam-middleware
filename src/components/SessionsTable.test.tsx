@@ -27,11 +27,10 @@ function starsCellOf(session: ReturnType<typeof makeSession>): HTMLElement {
 }
 
 describe('SessionsTable — columna de estrellas', () => {
-  it('muestra las estrellas reales de Cafetero sin la etiqueta "estimado"', () => {
+  it('muestra las estrellas reales de Cafetero doradas y sin etiqueta', () => {
     const cell = starsCellOf(makeSession({ game: 'game3', exercise: 'CoffeeWash', score: 100, stars: 2 }))
-    expect(cell.textContent).toContain('★★★')
-    expect(cell.textContent).not.toContain('estimado')
-    expect(cell.querySelector('[title="2 de 3 estrellas"]')).not.toBeNull()
+    expect(cell.textContent).toBe('★★★')
+    expect(cell.querySelector('[title="2 de 3 estrellas"]')?.className).toContain('text-amber-500')
   })
 
   it('un intento perdido (0 estrellas reales) no se confunde con una celda vacía', () => {
@@ -39,9 +38,12 @@ describe('SessionsTable — columna de estrellas', () => {
     expect(cell.querySelector('[title="0 de 3 estrellas"]')).not.toBeNull()
   })
 
-  it('una partida de Cafetero sin estrellas conserva la estimación marcada como estimada', () => {
+  it('una partida de Cafetero sin estrellas muestra la estimación igual de dorada y sin etiqueta; solo el texto al pasar el cursor la distingue', () => {
     const cell = starsCellOf(makeSession({ game: 'game3', exercise: 'CoffeeWash', score: 100, stars: null }))
-    expect(cell.textContent).toContain('estimado')
+    expect(cell.textContent).toBe('★★★')
+    const stars = cell.querySelector('[title*="estimadas"]')
+    expect(stars?.className).toContain('text-amber-500')
+    expect(stars?.getAttribute('title')).toContain('3 de 3 estrellas')
   })
 
   it('un intento sin estrellas fuera de Cafetero dice que no se registraron', () => {
