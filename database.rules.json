@@ -1,19 +1,32 @@
 {
   "rules": {
     "admins": {
-      ".read": "auth != null",
+      ".read": "auth != null && root.child('admins').child(auth.uid).exists()",
       "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
         ".write": "auth != null && ((auth.uid === $uid && ((data.exists() && newData.child('role').val() === data.child('role').val()) || (!data.exists() && root.child('settings/allowedAdminUids').child($uid).exists() && newData.child('role').val() === 'admin'))) || root.child('admins').child(auth.uid).child('role').val() === 'owner')"
       }
     },
     "audit": {
-      ".read": "auth != null",
-      ".write": "auth != null",
-      ".indexOn": ["timestamp"]
+      ".read": "auth != null && root.child('admins').child(auth.uid).exists()",
+      ".indexOn": ["timestamp"],
+      "$id": {
+        ".write": "auth != null && !data.exists() && newData.exists() && root.child('admins').child(auth.uid).exists()",
+        ".validate": "newData.hasChildren(['adminUid', 'adminEmail', 'action', 'timestamp']) && newData.child('adminUid').val() === auth.uid && newData.child('timestamp').val() === now",
+        "adminUid": { ".validate": "newData.isString()" },
+        "adminEmail": { ".validate": "newData.isString() && newData.val().length <= 200" },
+        "action": { ".validate": "newData.isString() && newData.val().matches(/^(serial_activate|serial_deactivate|admin_created|admin_revoked|admin_role_changed|game_admin_granted)$/)" },
+        "timestamp": { ".validate": "newData.isNumber()" },
+        "game": { ".validate": "newData.isString() && newData.val().length <= 20" },
+        "serial": { ".validate": "newData.isString() && newData.val().length <= 100" },
+        "previousValue": { ".validate": "(newData.isNumber() && (newData.val() === 0 || newData.val() === 1)) || (newData.isString() && newData.val().length <= 20)" },
+        "newValue": { ".validate": "(newData.isNumber() && (newData.val() === 0 || newData.val() === 1)) || (newData.isString() && newData.val().length <= 20)" },
+        "targetEmail": { ".validate": "newData.isString() && newData.val().length <= 200" },
+        "$other": { ".validate": false }
+      }
     },
     "settings": {
-      ".read": "auth != null",
-      ".write": "auth != null",
+      ".read": "auth != null && root.child('admins').child(auth.uid).child('role').val() === 'owner'",
       "allowedAdminUids": {
         ".write": "auth != null && root.child('admins').child(auth.uid).child('role').val() === 'owner'"
       }
