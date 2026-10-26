@@ -22,8 +22,7 @@ interface GenerateParams {
 
 const SEAM_TEAL: [number, number, number] = [22, 138, 128]
 const STARS_COLUMN_INDEX = 4
-const REAL_STAR_COLOR: [number, number, number] = [40, 40, 40]
-const ESTIMATED_STAR_COLOR: [number, number, number] = [217, 149, 20] // ámbar, igual criterio que la UI
+const STAR_COLOR: [number, number, number] = [217, 149, 20] // ámbar, igual que las estrellas de la tabla de la UI
 
 // jsPDF con las fuentes estándar (helvetica) solo soporta WinAnsiEncoding — los
 // caracteres ★ ↑ → ↓ quedan fuera de esa codificación y el PDF los renderiza como
@@ -273,12 +272,7 @@ export function generatePatientReportPdf({ profile, filters, generatedByEmail }:
         const info = starInfos[data.row.index]
         if (!info) return
         const cy = data.cell.y + data.cell.height / 2
-        drawRatingCircles(doc, data.cell.x + 4, cy, info.filled, 3, info.estimated ? ESTIMATED_STAR_COLOR : REAL_STAR_COLOR)
-        if (info.estimated) {
-          doc.setFontSize(6.5)
-          doc.setTextColor(...ESTIMATED_STAR_COLOR)
-          doc.text('estimado', data.cell.x + 4 + 3 * 7.5 + 3, cy + 2)
-        }
+        drawRatingCircles(doc, data.cell.x + 4, cy, info.filled, 3, STAR_COLOR)
       },
       didDrawPage: () => {
         y = 50
