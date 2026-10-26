@@ -22,7 +22,7 @@
             "time":         { ".validate": "newData.isString() && newData.val().length <= 30" },
             "timeSeconds":  { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 7200" },
             "difficulty":   { ".validate": "newData.isString() && (newData.val() === 'Easy' || newData.val() === 'Medium' || newData.val() === 'Hard')" },
-            "experience":   { ".validate": "newData.isString() && newData.val().matches(/^exercise[1-9]$/)" },
+            "experience":   { ".validate": "newData.isString() && newData.val().matches(/^(RiverFish|DrinkWater|MemoryGame|exercise[1-9])$/)" },
             "date":         { ".validate": "newData.isString() && newData.val().length <= 10" },
             "hour":         { ".validate": "newData.isString() && newData.val().length <= 8" },
             "timestampUtc": { ".validate": "newData.isString() && newData.val().length <= 40" },

@@ -11,6 +11,10 @@ const EXERCISE_LABELS: Record<string, string> = {
   exercise1: 'Pesca en el río',
   exercise2: 'Saca agua del pozo',
   exercise3: 'Juego de memoria',
+  // Desde Amazonas 3.8.0 la app escribe el nombre del ejercicio en vez de exercise1..3
+  RiverFish: 'Pesca en el río',
+  DrinkWater: 'Saca agua del pozo',
+  MemoryGame: 'Juego de memoria',
   exercisedance: 'Danza',
   'dance exercise': 'Danza',
   CoffeeWash: 'Lavado del café',
@@ -35,6 +39,10 @@ export function formatExerciseLabel(raw: string | null): string {
  */
 const EXERCISE_ALIASES: Record<string, string> = {
   'dance exercise': 'exercisedance',
+  // Amazonas: las sesiones con el nombre nuevo (3.8.0 en adelante) se agrupan con las de exercise1..3 (APK hasta la 3.7.1)
+  RiverFish: 'exercise1',
+  DrinkWater: 'exercise2',
+  MemoryGame: 'exercise3',
 }
 
 export function canonicalExercise(raw: string): string {
