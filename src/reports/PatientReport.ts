@@ -8,7 +8,7 @@ import { applySessionFilters, hasActiveFilters } from '@/utils/sessionFilters'
 import { formatDateEs, formatDifficultyLabel, formatDurationEs } from '@/utils/normalize'
 import { formatExerciseLabel } from '@/utils/labels'
 import { sessionResult } from '@/utils/sessionResult'
-import { estimateCafeteroStars } from '@/utils/estimatedStars'
+import { sessionStars } from '@/utils/estimatedStars'
 import { computeSessionStats } from '@/utils/patientStats'
 import { computeExerciseLevelPerformance, computeExercisePerformance, type PerformanceTrend } from '@/utils/exercisePerformance'
 import { computePatientConclusions, formatConclusionsText } from '@/utils/patientConclusions'
@@ -34,17 +34,6 @@ const TREND_LABEL: Record<PerformanceTrend, string> = {
   mejorando: '+ Mejorando',
   estable: '= Estable',
   disminuyendo: '- Disminuyendo',
-}
-
-interface StarInfo {
-  filled: number
-  estimated: boolean
-}
-
-function getStarInfo(s: NormalizedSession): StarInfo | null {
-  if (s.stars !== null) return { filled: s.stars, estimated: false }
-  const estimated = s.game === 'game3' ? estimateCafeteroStars(s.score, s.exercise) : null
-  return estimated === null ? null : { filled: estimated, estimated: true }
 }
 
 export function generatePatientReportPdf({ profile, filters, generatedByEmail }: GenerateParams): void {
@@ -258,7 +247,7 @@ export function generatePatientReportPdf({ profile, filters, generatedByEmail }:
     ensureSpace(30)
     subheading('Detalle de sesiones')
 
-    const starInfos = filtered.map(getStarInfo)
+    const starInfos = filtered.map(sessionStars)
 
     autoTable(doc, {
       startY: y + 6,
@@ -271,7 +260,7 @@ export function generatePatientReportPdf({ profile, filters, generatedByEmail }:
           formatExerciseLabel(s.exercise),
           formatDifficultyLabel(s.difficulty),
           s.score === null ? 'No disponible' : String(s.score),
-          info === null ? 'No aplica' : '', // se dibuja con círculos en didDrawCell
+          info === null ? 'No registrado' : '', // se dibuja con círculos en didDrawCell
           formatDurationEs(s.durationSeconds),
           resultLabel(s),
           s.metrics === null || s.metrics.errors === null ? 'No registrado' : String(s.metrics.errors),

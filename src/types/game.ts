@@ -46,7 +46,7 @@ export interface G3ResultEntry {
   difficulty?: string // 'Easy' | 'Medium' | 'Hard'
   experience?: string // 'CoffeeWash' | 'CoffeeClassification' | ...
   score?: number
-  stars?: number // solo Amazonas (desde su versión 3.7): 0 a 3, 0 = intento perdido; Cafetero no guarda estrellas
+  stars?: number // 0 a 3, 0 = intento perdido. Amazonas desde su versión 3.7; Cafetero desde la versión que las calcula (las partidas anteriores no lo traen)
   time?: string // 'M:SS seconds', opcional — NO se llama 'timing' como en G1/G2
 
   // Campos que la app de Cafetero guarda desde su versión 1.2.x — ausentes en partidas anteriores.
@@ -184,7 +184,7 @@ export interface NormalizedSession {
   difficulty: NormalizedDifficulty
   exercise: string | null
   score: number | null
-  stars: number | null // null si el juego no tiene el concepto (Game 3)
+  stars: number | null // 0 a 3 como las guardó el juego; null si el intento no las trae (Cafetero antes de su versión con estrellas)
   durationSeconds: number | null
   durationRaw: string | null
   /** Resultado que el juego guardó. null en partidas anteriores a que lo guardara y en Amazonas/Cartagena — nunca se deduce aquí (ver `sessionResult`). */

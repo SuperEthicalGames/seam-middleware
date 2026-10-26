@@ -1,5 +1,28 @@
 import { describe, expect, it } from 'vitest'
-import { estimateCafeteroStars } from './estimatedStars'
+import { makeSession } from '@/test/fixtures'
+import { estimateCafeteroStars, sessionStars } from './estimatedStars'
+
+describe('sessionStars', () => {
+  it('muestra las estrellas reales de Cafetero tal cual, sin estimar, incluido 0 de un intento perdido', () => {
+    expect(sessionStars(makeSession({ game: 'game3', exercise: 'CoffeeWash', score: 100, stars: 3 }))).toEqual({ filled: 3, estimated: false })
+    expect(sessionStars(makeSession({ game: 'game3', exercise: 'CoffeeWash', score: 0, stars: 0 }))).toEqual({ filled: 0, estimated: false })
+  })
+
+  it('las reales mandan sobre lo que diría el puntaje', () => {
+    // 100 puntos de Lavado serían 3 estrellas estimadas; el juego guardó 1
+    expect(sessionStars(makeSession({ game: 'game3', exercise: 'CoffeeWash', score: 100, stars: 1 }))).toEqual({ filled: 1, estimated: false })
+  })
+
+  it('estima solo una partida de Cafetero que no trae estrellas', () => {
+    expect(sessionStars(makeSession({ game: 'game3', exercise: 'CoffeeWash', score: 100, stars: null }))).toEqual({ filled: 3, estimated: true })
+  })
+
+  it('no estima ni inventa nada fuera de Cafetero ni sin puntaje reconocible', () => {
+    expect(sessionStars(makeSession({ game: 'game1', exercise: 'exercise1', score: 80, stars: null }))).toBeNull()
+    expect(sessionStars(makeSession({ game: 'game3', exercise: 'CoffeeWash', score: null, stars: null }))).toBeNull()
+    expect(sessionStars(makeSession({ game: 'game3', exercise: 'Otro', score: 80, stars: null }))).toBeNull()
+  })
+})
 
 describe('estimateCafeteroStars', () => {
   it('aplica las bandas 66%/33% normalizadas por la referencia (percentil 90 real) de cada minijuego', () => {

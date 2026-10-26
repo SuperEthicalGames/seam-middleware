@@ -6,7 +6,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import { initializeTestEnvironment, type RulesTestEnvironment } from '@firebase/rules-unit-testing'
+import { assertFails, assertSucceeds, initializeTestEnvironment, type RulesTestEnvironment } from '@firebase/rules-unit-testing'
 import { ref, set } from 'firebase/database'
 import type { Database } from 'firebase/database'
 
@@ -30,6 +30,7 @@ describe.skipIf(!emulator)('Game3Adapter contra las Rules reales de Cafetero', (
   const adapter = new Game3Adapter()
   const as = {
     admin: () => env.authenticatedContext(ADMIN, { email: 'admin@seam.com' }).database() as unknown as Database,
+    patient: (uid = 'uidA') => env.authenticatedContext(uid, { email: '1005180573@example.com' }).database() as unknown as Database,
     anonymous: () => env.authenticatedContext('anon1', { firebase: { sign_in_provider: 'anonymous' } }).database() as unknown as Database,
     nobody: () => env.unauthenticatedContext().database() as unknown as Database,
   }
@@ -101,6 +102,41 @@ describe.skipIf(!emulator)('Game3Adapter contra las Rules reales de Cafetero', (
     it('sin sesión tampoco', async () => {
       holder.db = as.nobody()
       await expect(adapter.getUsers()).rejects.toThrow(/permission/i)
+    })
+  })
+
+  describe('estrellas reales de la versión nueva de Cafetero', () => {
+    const record = (overrides: Record<string, unknown> = {}) => ({
+      score: 100,
+      stars: 3,
+      time: '0:42 seconds',
+      timeSeconds: 42.4,
+      difficulty: 'Easy',
+      experience: 'CoffeeWash',
+      date: '26/10/2026',
+      hour: '10:15:00',
+      isWin: true,
+      ...overrides,
+    })
+
+    it('guarda el intento con sus estrellas, de 0 (perdido) a 3, y el portal las lee', async () => {
+      const db = as.patient()
+      await assertSucceeds(set(ref(db, 'users/uidA/results/game02'), record()))
+      await assertSucceeds(set(ref(db, 'users/uidA/results/game03'), record({ score: 0, stars: 0, isWin: false })))
+      holder.db = as.admin()
+      const sessions = await adapter.getUserSessions('uidA')
+      expect(sessions.map((s) => [s.sourcePath, s.stars]).sort()).toEqual([
+        ['results.game01', null],
+        ['results.game02', 3],
+        ['results.game03', 0],
+      ])
+    })
+
+    it('rechaza unas estrellas fuera de 0 a 3 o que no son un número', async () => {
+      const db = as.patient()
+      await assertFails(set(ref(db, 'users/uidA/results/game04'), record({ stars: 4 })))
+      await assertFails(set(ref(db, 'users/uidA/results/game04'), record({ stars: -1 })))
+      await assertFails(set(ref(db, 'users/uidA/results/game04'), record({ stars: '3' })))
     })
   })
 })

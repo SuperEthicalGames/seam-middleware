@@ -38,7 +38,7 @@ describe('Game3Adapter', () => {
   })
 
   describe('getUserSessions', () => {
-    it('normaliza el log plano de results (Cafetero no tiene nodo record separado ni estrellas)', async () => {
+    it('normaliza el log plano de results (Cafetero no tiene nodo record separado) y deja las estrellas en null si la partida no las trae', async () => {
       const raw: G3User = {
         CC: '1005111111',
         results: { game01: { date: '22/04/2025', score: 100, experience: 'CoffeeWash' } },
@@ -49,6 +49,18 @@ describe('Game3Adapter', () => {
 
       expect(sessions).toHaveLength(1)
       expect(sessions[0].stars).toBeNull()
+    })
+
+    it('lee las estrellas reales de una partida de la versión que las guarda', async () => {
+      const raw: G3User = {
+        CC: '1005111111',
+        results: { game01: { date: '20/10/2026', score: 100, experience: 'CoffeeWash', stars: 3, isWin: true } },
+      }
+      mockedGet.mockResolvedValueOnce(makeSnapshot(raw))
+
+      const sessions = await adapter.getUserSessions('uid1')
+
+      expect(sessions[0].stars).toBe(3)
     })
   })
 

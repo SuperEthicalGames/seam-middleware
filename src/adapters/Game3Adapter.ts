@@ -7,8 +7,8 @@ import { PortalError } from '@/utils/errors'
 
 /**
  * Game 3 tiene una forma propia (ver DATA_MAPPING.md): campo de identificador `CC`
- * (no `cedula`), sin nodo `record` separado, sin `stars`, y el campo de duración se
- * llama `time` (no `timing`). No se reutiliza g12Normalize porque asumir la misma forma
+ * (no `cedula`), sin nodo `record` separado, `stars` solo en las partidas de la versión
+ * que las guarda, y el campo de duración se llama `time` (no `timing`). No se reutiliza g12Normalize porque asumir la misma forma
  * sería exactamente el error que el prompt pide evitar.
  */
 export class Game3Adapter implements GameAdapter {
