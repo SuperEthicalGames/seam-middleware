@@ -31,7 +31,7 @@
             "isWin":        { ".validate": "newData.isBoolean()" },
             "stars":        { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 3" },
 
-            "scoreModel":     { ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 99" },
+            "scoreModel":      { ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 99" },
             "sessionId":       { ".validate": "newData.isString() && newData.val().length <= 40" },
             "attempt":         { ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 1000" },
             "device":          { ".validate": "newData.isString() && newData.val().length <= 60" },
@@ -59,6 +59,8 @@
             "scoreTime":       { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100000" },
             "scorePenalty":    { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100000" },
             "timeLimitSeconds": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 7200" },
+            "idleSeconds":      { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 7200" },
+            "fullScoreSeconds": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 7200" },
             "checkpointSeconds": {
               "$i": { ".validate": "$i.matches(/^[0-9]{1,2}$/) && newData.isNumber() && newData.val() >= 0 && newData.val() <= 7200" }
             },
@@ -127,6 +129,12 @@
       "nextDeviceIndex": {
         ".read": "auth != null",
         ".write": "auth != null && (root.child('admins').child(auth.uid).val() === true || (newData.isNumber() && newData.val() <= 99999 && newData.val() === (data.exists() ? data.val() + 1 : 1)))"
+      },
+
+      "offlineAccessKey": {
+        ".read": "auth != null && root.child('admins').child(auth.uid).val() === true",
+        ".write": "auth != null && root.child('owners').child(auth.uid).val() === true",
+        ".validate": "newData.isString() && newData.val().matches(/^[0-9a-f]{64}$/)"
       }
     }
   }
