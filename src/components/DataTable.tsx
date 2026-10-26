@@ -19,6 +19,8 @@ interface DataTableProps<T> {
   emptyTitle?: string
   emptyDescription?: string
   pageSize?: number
+  /** Orden con el que arranca la tabla (la persona lo cambia después con un clic en el encabezado). `key` es el de una columna con `sortValue`. */
+  initialSort?: { key: string; dir: 'asc' | 'desc' }
 }
 
 export function DataTable<T>({
@@ -31,9 +33,10 @@ export function DataTable<T>({
   emptyTitle = 'No hay datos para mostrar.',
   emptyDescription,
   pageSize = 10,
+  initialSort,
 }: DataTableProps<T>) {
-  const [sortKey, setSortKey] = useState<string | null>(null)
-  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
+  const [sortKey, setSortKey] = useState<string | null>(initialSort?.key ?? null)
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>(initialSort?.dir ?? 'asc')
   const [page, setPage] = useState(1)
 
   const sortedRows = useMemo(() => {

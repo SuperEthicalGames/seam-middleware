@@ -110,8 +110,9 @@ export function Search() {
         <h2 className="mb-1 text-sm font-semibold text-ink-800">Buscar usuario</h2>
         <p className="mb-4 text-sm text-ink-500">
           Explora o filtra por cédula/CC (puede ser parcial), juego, actividad o fecha de última actividad — no hace falta conocer el
-          identificador completo. Hacé clic en "Última actividad" para ordenar del primero al último. Cada fila consulta los tres juegos de
-          forma independiente al abrir el perfil.
+          identificador completo. La lista empieza ordenada por la última actividad, de la fecha más reciente a la más antigua (quienes no
+          tienen actividad quedan al final); hacé clic en un encabezado para cambiar el orden. Cada fila consulta los tres juegos de forma
+          independiente al abrir el perfil.
         </p>
         <div className="flex flex-wrap items-end gap-3">
           <div className="min-w-[200px] flex-1">
@@ -204,6 +205,7 @@ export function Search() {
           onRetry={reload}
           emptyTitle="Ningún usuario coincide con los filtros actuales."
           pageSize={15}
+          initialSort={{ key: 'lastActivityDate', dir: 'desc' }}
         />
       </Card>
     </div>
