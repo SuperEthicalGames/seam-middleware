@@ -7,7 +7,9 @@ import { GAME_CATALOG, GAME_IDS } from '@/config/games'
 import { Card } from '@/components/Card'
 import { DateRangeCalendar, type DateRange } from '@/components/DateRangeCalendar'
 import { ErrorState } from '@/components/States'
+import { ExportPreview } from '@/components/ExportPreview'
 import {
+  buildExportSheets,
   buildExportWorkbook,
   countsByDay,
   describeRange,
@@ -74,6 +76,13 @@ export function Exportar() {
   const dayHours = data && focusDay ? hoursOfDay(data.rows, games, focusDay) : null
   const maxBucket = dayHours ? Math.max(1, ...dayHours.hours.map((b) => b.sessions)) : 1
   const failedSelected = (data?.failedGames ?? []).filter((g) => games.includes(g))
+  const generatedBy = profile?.email ?? user?.email ?? 'Administrador SEAM'
+  // La vista previa sale de las mismas hojas que arma el archivo (`buildExportSheets`): lo que se ve aquí es lo que trae el Excel. Se vuelve a armar solo cuando cambia la
+  // selección (`selected` ya depende de los días, las horas, los juegos y los datos cargados).
+  const sheets = useMemo(
+    () => (selected.length > 0 ? buildExportSheets(selected, { criteria, failedGames: failedSelected, generatedAt: new Date(), generatedBy }) : []),
+    [selected, generatedBy], // eslint-disable-line react-hooks/exhaustive-deps
+  )
 
   function toggleGame(g: GameId) {
     setGames((cur) => (cur.includes(g) ? cur.filter((x) => x !== g) : GAME_IDS.filter((x) => x === g || cur.includes(x))))
@@ -87,7 +96,7 @@ export function Exportar() {
         criteria,
         failedGames: failedSelected,
         generatedAt: new Date(),
-        generatedBy: profile?.email ?? user?.email ?? 'Administrador SEAM',
+        generatedBy,
       })
       const url = URL.createObjectURL(new Blob([bytes as BlobPart], { type: XLSX_MIME }))
       const a = document.createElement('a')
@@ -112,7 +121,7 @@ export function Exportar() {
       <Card>
         <h2 className="text-base font-semibold text-ink-900">Exportar sesiones a Excel</h2>
         <p className="mt-1 text-sm text-ink-500">
-          Elija el día (o los días) en el calendario, los juegos y, si quiere, las horas. Abajo verá cuántas sesiones se van a exportar antes de descargar.
+          Elija el día (o los días) en el calendario, los juegos y, si quiere, las horas. Antes de descargar verá una vista previa con las mismas hojas y datos que traerá el Excel.
         </p>
       </Card>
 
@@ -251,7 +260,26 @@ export function Exportar() {
       </Card>
 
       <Card>
-        <h3 className="mb-3 text-sm font-semibold text-ink-800">3. Descargar</h3>
+        <h3 className="mb-1 text-sm font-semibold text-ink-800">3. Vista previa del Excel</h3>
+        <p className="mb-4 text-sm text-ink-500">
+          Estas son las hojas y los datos que traerá el archivo con lo que eligió arriba. Si algo no es lo que esperaba, cambie los días, los juegos o las horas y la vista se
+          actualiza.
+        </p>
+        {loading ? (
+          <p className="py-6 text-center text-sm text-ink-500" role="status">
+            Esperando los datos…
+          </p>
+        ) : problem ? (
+          <p className="text-sm text-amber-700">{problem}</p>
+        ) : sheets.length === 0 ? (
+          <p className="text-sm text-ink-500">No hay sesiones en esa selección, así que no hay nada que previsualizar. Pruebe otro día.</p>
+        ) : (
+          <ExportPreview sheets={sheets} />
+        )}
+      </Card>
+
+      <Card>
+        <h3 className="mb-3 text-sm font-semibold text-ink-800">4. Descargar</h3>
         {failedSelected.length > 0 && (
           <p className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">
             No se pudo leer {failedSelected.map((g) => GAME_CATALOG[g].displayName).join(' ni ')}: sus sesiones no estarán en el archivo (el libro lo avisa). Revise que
