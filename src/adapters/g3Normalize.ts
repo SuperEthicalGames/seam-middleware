@@ -43,6 +43,11 @@ function count(value: unknown): number | null {
   return typeof value === 'number' && Number.isFinite(value) && value >= 0 ? value : null
 }
 
+/** Estrellas del juego: entero de 0 a 3 (0 = intento perdido), o null. Lo que las Rules dejan escribir; cualquier otro valor no se muestra como si fuera uno. */
+function starsOf(value: unknown): number | null {
+  return typeof value === 'number' && Number.isInteger(value) && value >= 0 && value <= 3 ? value : null
+}
+
 function text(value: unknown): string | null {
   return typeof value === 'string' && value.length > 0 ? value : null
 }
@@ -102,8 +107,8 @@ export function entryToSeamSession(game: GameId, uid: string, key: string, entry
     difficulty: normalizeDifficulty(entry.difficulty),
     exercise: entry.experience ?? null,
     score: typeof entry.score === 'number' ? entry.score : null,
-    // Cafetero no guarda estrellas (null); Amazonas sí (0 a 3, 0 = intento perdido)
-    stars: count(entry.stars),
+    // Las dos aplicaciones guardan estrellas reales (0 a 3, 0 = intento perdido); null en las partidas de Cafetero anteriores a que las guardara
+    stars: starsOf(entry.stars),
     // `time` redondea a segundos enteros; `timeSeconds` (partidas recientes) trae los decimales
     durationSeconds: count(entry.timeSeconds) ?? parseDurationToSeconds(entry.time),
     durationRaw: entry.time ?? null,

@@ -28,7 +28,7 @@ Escala observada: 15 `users`, 25 `identificators`, 25 `serials`.
 | `record.gameNN.date` | string | — | `"27/08/2026"` | Formato `DD/MM/YYYY`. |
 | `record.gameNN.hour` | string | — | `"16:10:54"` | `HH:MM:SS`, 24h. |
 | `record.gameNN.difficulty` | string | — | `"EASY"` / `"MEDIUM"` / `"HARD"` | Mayúsculas. |
-| `record.gameNN.experience` | string | — | `"exercise1"`, `"exercise2"`, `"exercise3"` | Nombre del ejercicio. Confirmado por el cliente: `exercise1` = "Pesca en el río", `exercise2` = "Saca agua del pozo", `exercise3` = "Juego de memoria" (ver `src/utils/labels.ts`). |
+| `record.gameNN.experience` | string | — | `"exercise1"`, `"exercise2"`, `"exercise3"` (APK hasta la 3.7.1) o `"RiverFish"`, `"DrinkWater"`, `"MemoryGame"` (desde la 3.8.0; el portal los agrupa con los anteriores en `canonicalExercise`) | Nombre del ejercicio. Confirmado por el cliente: `exercise1` = "Pesca en el río", `exercise2` = "Saca agua del pozo", `exercise3` = "Juego de memoria" (ver `src/utils/labels.ts`). |
 | `record.gameNN.score` | number | — | `33`, `87` | Entero. |
 | `record.gameNN.stars` | number | — | `1`–`3` | |
 | `record.gameNN.timing` | string | — | `"4:04 seconds"` | Formato texto libre `M:SS seconds`, **no** segundos numéricos. |
@@ -86,7 +86,7 @@ Escala observada: 18 `users`, **1** `identificators`, **1** `serials`.
 | `sessionId`, `attempt`, `device`, `serverTimestamp` | string, number, string, number | desde `scoreModel: 2` | | Sesión del usuario, número de intento de ese ejercicio y nivel dentro de ella, modelo del visor y hora del servidor al llegar el resultado. |
 | `errors`, `leftCount`, `rightCount`, `wrongArm`, `outOfOrder`, `reTouch`, `errRed`, `errYellow`, `errGreen`, `stepsDone`, `drops`, `offPathSeconds`, `firstActionSeconds` | number | desde `scoreModel: 2`, cada minijuego solo los que mide | | Qué pasó en el intento además del puntaje. **Ausente = el minijuego no lo mide; `0` = se midió y no ocurrió.** Significado de cada uno en `firebase/README.md` del repositorio del juego. |
 | `progressPercent`, `maxScore`, `scoreProgress`, `scoreTime`, `scorePenalty`, `timeLimitSeconds`, `checkpointSeconds`, `swayAvgCm`, `swayMaxCm` | number (`checkpointSeconds`: lista de number) | desde `scoreModel: 3` | | **Los cinco minijuegos puntúan con la misma suma** (base × lo que se hizo + segundos que sobraron × puntos por segundo, solo si se ganó − errores). `maxScore` es el mejor puntaje de ese nivel, así que `score / maxScore` es el puntaje como parte de su nivel sin depender de una tabla del portal (`sessionScorePercent` lo usa cuando existe). `progressPercent` es cuánto del ejercicio se hizo (una derrota conserva lo hecho: ya no hay solo 0 o 100), `scoreProgress` / `scoreTime` / `scorePenalty` son las tres partes, `checkpointSeconds` el segundo del intento en que se completó cada unidad (grano, camino de Lavado, momento de la receta) y `swayAvgCm` / `swayMaxCm` (solo Transporte) cuánto se alejó la cabeza de la línea. Se leen en `NormalizedSession.breakdown` y `metrics`; todavía no se muestran en pantalla. **Un % de Transporte, Lavado o Elaboración de `scoreModel` 3 no es comparable con el de las partidas anteriores:** su máximo ahora incluye el bonus de tiempo (Lavado Fácil 1600 y no 1000), así que la misma habilidad da un % menor sin que el paciente haya empeorado. |
-| `results.gameNN.stars` | — | **nunca observado** | — | Game 3 **no tiene el concepto de estrellas** en los datos reales. |
+| `results.gameNN.stars` | number | solo la versión de Cafetero que las calcula (2026-10-26 en adelante) | `0`–`3` | Estrellas reales del juego, igual que Amazonas: `0` = intento perdido. **Las partidas anteriores no lo traen** (nunca lo tuvieron, ver abajo): el portal les muestra una estimación marcada como tal. |
 
 **Confirmado por código fuente (2026-09-08, `ScoreController.cs` provisto por el cliente):** el controlador de guardado de Cafetero escribe únicamente `time`/`score`/`difficulty`/`experience`/`date`/`hour` en `results/{gameNN}` — **no existe ninguna línea de código que calcule o guarde una estrella**. No es un dato faltante por un bug de la app; el juego nunca tuvo ese mecanismo. Por contraste, se confirmó también el código de `BaseExercise.cs` (clase base compartida por Amazonas y Cartagena) con el método:
 ```csharp
@@ -115,7 +115,7 @@ Mismo patrón conceptual (hash string → serial code string → `0`/`1`), pero 
 | Dificultad | `EASY/MEDIUM/HARD` (mayúsc.) | igual | `Easy/Medium/Hard` (capitalizado) | Sí → normalizar a un enum común |
 | Nombre de ejercicio | `exercise1/2/3` | `exercisedance` / `dance exercise` (inconsistente) | `CoffeeWash`, `CoffeeClassification`, `CoffeeCollection`, `CoffeeTransportation`, `CoffeeElaboration` | Sí, pero **no comparables entre juegos** (catálogos distintos) |
 | Puntuación | `score`, entero 0–100 aprox. | igual | `score`, entero 0–2940+ | Se normaliza el campo, **no la escala** (no promediar entre juegos) |
-| Estrellas | `stars` 1–3 | igual | **no existe** | No — campo específico de G1/G2, mostrar solo si existe |
+| Estrellas | `stars` 1–3 | igual | `stars` 0–3 solo en la versión nueva; **no existe** en las partidas anteriores | Sí, `stars` como las guardó el juego; `null` si el intento no las trae |
 | Duración | `timing` = texto `"M:SS seconds"` | igual | `time` = texto `"M:SS seconds"`, opcional | Sí → parsear a segundos numéricos en el adapter |
 | Identificador de dispositivo/licencia | `identificators/{hash}` → `serials/{code}` | igual patrón | igual patrón (casi vacío) | Sí, mismo modelo conceptual en los 3 |
 | Estado de acceso | `serials/{code}` = `0`\|`1` (number) | igual | igual | Sí, mismo tipo en los 3 |
@@ -165,7 +165,7 @@ NormalizedSession {
   difficulty: 'easy' | 'medium' | 'hard' | 'unknown'  // normalizado
   exercise: string             // valor tal cual (no se traduce entre catálogos distintos)
   score: number | null
-  stars: number | null         // null si el juego no tiene el concepto (Game 3)
+  stars: number | null         // 0 a 3 como las guardó el juego; null si el intento no las trae (Cafetero antes de su versión con estrellas)
   durationSeconds: number | null // parseado de 'M:SS seconds', null si no se pudo parsear
 }
 

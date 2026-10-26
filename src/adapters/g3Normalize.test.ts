@@ -34,9 +34,35 @@ describe('normalizeG3User', () => {
 })
 
 describe('normalizeG3Sessions', () => {
-  it('nunca inventa stars (Game 3 no tiene ese campo)', () => {
+  it('nunca inventa stars en las partidas anteriores a la versión que las guarda', () => {
     const sessions = normalizeG3Sessions('uid1', userWithActivity)
     expect(sessions.every((s) => s.stars === null)).toBe(true)
+  })
+
+  it('lee las estrellas reales que guarda la versión nueva, de 0 (intento perdido) a 3', () => {
+    const raw: G3User = {
+      CC: '900000006',
+      results: {
+        game01: { date: '20/10/2026', experience: 'CoffeeWash', score: 0, stars: 0, isWin: false },
+        game02: { date: '20/10/2026', experience: 'CoffeeWash', score: 60, stars: 2, isWin: true },
+        game03: { date: '20/10/2026', experience: 'CoffeeWash', score: 100, stars: 3, isWin: true },
+      },
+    }
+    const byKey = Object.fromEntries(normalizeG3Sessions('uid1', raw).map((s) => [s.sourcePath, s.stars]))
+    expect(byKey).toEqual({ 'results.game01': 0, 'results.game02': 2, 'results.game03': 3 })
+  })
+
+  it('descarta unas estrellas que no son 0 a 3 enteras en vez de mostrarlas', () => {
+    const raw = {
+      CC: '900000007',
+      results: {
+        game01: { date: '20/10/2026', experience: 'CoffeeWash', score: 100, stars: 4 },
+        game02: { date: '20/10/2026', experience: 'CoffeeWash', score: 100, stars: -1 },
+        game03: { date: '20/10/2026', experience: 'CoffeeWash', score: 100, stars: 2.5 },
+        game04: { date: '20/10/2026', experience: 'CoffeeWash', score: 100, stars: '3' },
+      },
+    } as unknown as G3User
+    expect(normalizeG3Sessions('uid1', raw).every((s) => s.stars === null)).toBe(true)
   })
 
   it('tolera entradas sin hour/time (observado en datos reales)', () => {

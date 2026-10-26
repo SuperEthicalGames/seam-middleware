@@ -3,7 +3,7 @@ import { DataTable, type Column } from './DataTable'
 import { Badge } from './Badge'
 import { formatDateEs, formatDifficultyLabel, formatDurationEs } from '@/utils/normalize'
 import { formatExerciseLabel } from '@/utils/labels'
-import { estimateCafeteroStars } from '@/utils/estimatedStars'
+import { sessionStars } from '@/utils/estimatedStars'
 import { sessionResult } from '@/utils/sessionResult'
 
 const DIFFICULTY_TONE = {
@@ -55,14 +55,19 @@ export function SessionsTable({ sessions, loading, error, onRetry }: { sessions:
       key: 'stars',
       header: 'Estrellas',
       render: (s) => {
-        if (s.stars !== null) {
-          return <span title={`${s.stars} de 3 estrellas`}>{'★'.repeat(s.stars)}</span>
-        }
-        const estimated = s.game === 'game3' ? estimateCafeteroStars(s.score, s.exercise) : null
-        if (estimated === null) {
+        const stars = sessionStars(s)
+        if (stars === null) {
           return (
-            <span className="text-xs text-ink-400" title="Este juego no calcula estrellas — confirmado en su código fuente, no es un dato faltante.">
-              No aplica
+            <span className="text-xs text-ink-400" title="Este intento no guardó estrellas.">
+              No registrado
+            </span>
+          )
+        }
+        if (!stars.estimated) {
+          return (
+            <span title={`${stars.filled} de 3 estrellas`}>
+              {'★'.repeat(stars.filled)}
+              <span className="text-ink-200">{'★'.repeat(3 - stars.filled)}</span>
             </span>
           )
         }
@@ -70,16 +75,16 @@ export function SessionsTable({ sessions, loading, error, onRetry }: { sessions:
           <div>
             <span
               className="text-amber-500"
-              title="Estimado a partir del puntaje: Cafetero no guarda estrellas, este valor se calcula solo para referencia visual y no es un dato del juego."
+              title="Estimado a partir del puntaje: esta partida de Cafetero es anterior a la versión que guarda las estrellas, este valor se calcula solo para referencia visual y no es un dato del juego."
             >
-              {'★'.repeat(estimated)}
-              <span className="text-ink-200">{'★'.repeat(3 - estimated)}</span>
+              {'★'.repeat(stars.filled)}
+              <span className="text-ink-200">{'★'.repeat(3 - stars.filled)}</span>
             </span>
             <div className="text-[10px] uppercase tracking-wide text-ink-400">estimado</div>
           </div>
         )
       },
-      sortValue: (s) => s.stars ?? (s.game === 'game3' ? (estimateCafeteroStars(s.score, s.exercise) ?? -1) : -1),
+      sortValue: (s) => sessionStars(s)?.filled ?? -1,
     },
     {
       key: 'result',

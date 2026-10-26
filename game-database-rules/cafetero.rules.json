@@ -29,8 +29,9 @@
             "appVersion":   { ".validate": "newData.isString() && newData.val().length <= 20" },
             "recordId":     { ".validate": "newData.isString() && newData.val().length <= 40" },
             "isWin":        { ".validate": "newData.isBoolean()" },
+            "stars":        { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 3" },
 
-            "scoreModel":      { ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 99" },
+            "scoreModel":     { ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 99" },
             "sessionId":       { ".validate": "newData.isString() && newData.val().length <= 40" },
             "attempt":         { ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 1000" },
             "device":          { ".validate": "newData.isString() && newData.val().length <= 60" },
