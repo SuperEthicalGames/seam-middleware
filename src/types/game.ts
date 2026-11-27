@@ -14,7 +14,7 @@ export interface GameCatalogEntry {
 }
 
 // ---------------------------------------------------------------------------
-// Game 1 (seam-data-as) y Game 2 (seam-data-cartagena) — misma forma real
+// Primera versión de Game 1 (seam-data-as) y Game 2 (seam-data-cartagena) — misma forma real. Los proyectos nuevos de los dos guardan la forma de Game 3
 // ---------------------------------------------------------------------------
 
 export interface G12RecordEntry {
@@ -187,7 +187,7 @@ export interface NormalizedSession {
   stars: number | null // 0 a 3 como las guardó el juego; null si el intento no las trae (Cafetero antes de su versión con estrellas)
   durationSeconds: number | null
   durationRaw: string | null
-  /** Resultado que el juego guardó. null en partidas anteriores a que lo guardara y en Amazonas/Cartagena — nunca se deduce aquí (ver `sessionResult`). */
+  /** Resultado que el juego guardó. null en partidas anteriores a que lo guardara y en la primera versión de Amazonas/Cartagena — nunca se deduce aquí (ver `sessionResult`). */
   isWin: boolean | null
   /** Reloj del visor al terminar el intento (ISO 8601), preciso al milisegundo. null en partidas anteriores. */
   timestampUtc: string | null
@@ -199,7 +199,7 @@ export interface NormalizedSession {
   device: string | null
   /** null si el juego no guardó ninguna métrica del intento. */
   metrics: SessionMetrics | null
-  /** Solo en partidas del modelo 3 de Cafetero (null en las demás y siempre en Amazonas y Cartagena). */
+  /** Solo en partidas del modelo 3 o más (Cafetero, y Amazonas y Cartagena con el sistema unificado); null en las demás. */
   breakdown?: ScoreBreakdown | null
 }
 

@@ -8,13 +8,13 @@ import { compareChronologically } from '@/utils/sessionOrder'
 export const COFFEE_FLOW = FIXED_EXERCISE_ORDER.game3 as string[]
 
 /**
- * Orden de los módulos de cada juego. Cartagena tiene un solo minijuego (Danza).
- * Solo Cafetero guarda si el intento se ganó o se perdió (`isWin`): en Amazonas y Cartagena no se puede saber si se ganó, así que ahí el portal solo
- * muestra el último módulo y dificultad jugados y no decide dónde continúa (`kind: 'unknown'`) — nunca adivina un resultado.
+ * Orden de los módulos de cada juego. Cartagena tiene desde su versión 3.1 tres módulos (la danza, los cañones y la palenquera).
+ * La regla de cómo se avanza solo está confirmada para Cafetero: en Amazonas y Cartagena el portal solo muestra el último módulo y dificultad jugados y
+ * no decide dónde continúa (`kind: 'unknown'`) — nunca adivina un resultado.
  */
 const FLOWS: Record<GameId, string[]> = {
   game1: FIXED_EXERCISE_ORDER.game1 as string[],
-  game2: ['exercisedance'],
+  game2: FIXED_EXERCISE_ORDER.game2 as string[],
   game3: COFFEE_FLOW,
 }
 const LEVELS: NormalizedDifficulty[] = ['easy', 'medium', 'hard']
@@ -30,7 +30,7 @@ export type ResumeKind =
   | 'next-exercise'
   /** Ganó el último nivel del último ejercicio. */
   | 'completed'
-  /** El juego no guarda si se ganó o se perdió: solo se sabe dónde jugó por última vez. */
+  /** El portal no conoce la regla de avance de este juego (solo la de Cafetero): solo se sabe dónde jugó por última vez. */
   | 'unknown'
 
 export interface ResumePoint {
@@ -116,7 +116,7 @@ export function explainResume(p: ResumePoint): string {
     case 'completed':
       return `Terminó ${where} ganando: ya completó todos los ejercicios del juego.`
     case 'unknown':
-      return `Su última partida fue en ${where}. Este juego no guarda si se ganó o se perdió, así que no se puede decidir dónde continúa.`
+      return `Su última partida fue en ${where}. En este juego el portal todavía no decide dónde continúa: solo conoce la regla de avance de Cafetero.`
     default:
       return ''
   }

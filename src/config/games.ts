@@ -5,6 +5,7 @@ import type { GameCatalogEntry, GameId } from '@/types/game'
 // seam-data-cartagena -> com.agencycic.cartagena, seam-data-game -> com.agencycic.cafetero.
 // Cafetero se mudó el 2026-10-08 a seam-ejecafetero-ae869 (package com.seam.ejecafetero).
 // Amazonas se mudó el 2026-10-17 a seam-as-1601a (package com.seam.amazonas).
+// Cartagena se mudó el 2026-11-25 a seam-cartagena-97c49 (package com.seam.cartagena, app 3.1).
 // No son nombres inventados por el portal; si el cliente usa otro nombre comercial
 // públicamente, actualizar aquí es el único cambio necesario (sección 56 del prompt).
 export const GAME_CATALOG: Record<GameId, GameCatalogEntry> = {
@@ -17,7 +18,7 @@ export const GAME_CATALOG: Record<GameId, GameCatalogEntry> = {
   game2: {
     id: 'game2',
     displayName: 'Cartagena',
-    databaseUrl: 'https://seam-data-cartagena-default-rtdb.firebaseio.com',
+    databaseUrl: 'https://seam-cartagena-97c49-default-rtdb.firebaseio.com',
     enabled: true,
   },
   game3: {
@@ -34,11 +35,11 @@ export const GAME_IDS: GameId[] = ['game1', 'game2', 'game3']
  * Si las Rules de ese juego ya exigen una sesión de administrador para LEER (capa owners / admins / adminRequests de game-database-rules/*.rules.json).
  *  - true: el portal inicia sesión en la base del juego con la cuenta del administrador y pide la conexión que falte (Cafetero, ya publicado).
  *  - false: el juego sigue con sus Rules actuales y el portal lo consulta como hasta ahora, sin pedir nada más. Su lectura no depende de la capa.
- * Cartagena pasa a true cuando publique sus Rules cerradas (ver game-database-rules/README.md): es el único cambio que hace falta. Amazonas ya lo está (proyecto nuevo).
+ * Los tres juegos están hoy en true: cada uno vive en su proyecto nuevo, con las Rules del sistema de Cafetero.
  */
 export const GAME_REQUIRES_ADMIN: Record<GameId, boolean> = {
   game1: true, // Amazonas: el proyecto nuevo (seam-as-1601a) solo se lee con una sesión de administrador, igual que Cafetero
-  game2: false,
+  game2: true, // Cartagena: el proyecto nuevo (seam-cartagena-97c49), igual que Amazonas
   game3: true,
 }
 

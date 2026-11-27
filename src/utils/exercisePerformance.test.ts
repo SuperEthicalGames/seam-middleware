@@ -120,14 +120,31 @@ describe('computeExercisePerformance', () => {
     expect(result.map((r) => r.exercise)).toEqual(['exercise1', 'exercise2', 'exercise3'])
   })
 
-  it('juegos sin orden fijo (Cartagena) siguen ordenados por cantidad de sesiones', () => {
+  it('ordena los módulos de Cartagena 3.1 según el recorrido de la app, con la danza del remake y la del legado juntas', () => {
     const sessions = [
+      session({ game: 'game2', exercise: 'FruitVendor' }),
+      session({ game: 'game2', exercise: 'FruitVendor' }),
+      session({ game: 'game2', exercise: 'CastleCannons' }),
+      session({ game: 'game2', exercise: 'Dance' }),
       session({ game: 'game2', exercise: 'exercisedance' }),
-      session({ game: 'game2', exercise: 'algunOtroCodigo' }),
-      session({ game: 'game2', exercise: 'algunOtroCodigo' }),
     ]
     const result = computeExercisePerformance(sessions, 'game2')
-    expect(result.map((r) => r.exercise)).toEqual(['algunOtroCodigo', 'exercisedance'])
+    expect(result.map((r) => [r.exercise, r.count])).toEqual([
+      ['exercisedance', 2],
+      ['CastleCannons', 1],
+      ['FruitVendor', 2],
+    ])
+  })
+
+  it('un código fuera del orden fijo va al final, ordenado por cantidad de sesiones', () => {
+    const sessions = [
+      session({ game: 'game2', exercise: 'otroCodigo' }),
+      session({ game: 'game2', exercise: 'algunOtroCodigo' }),
+      session({ game: 'game2', exercise: 'algunOtroCodigo' }),
+      session({ game: 'game2', exercise: 'CastleCannons' }),
+    ]
+    const result = computeExercisePerformance(sessions, 'game2')
+    expect(result.map((r) => r.exercise)).toEqual(['CastleCannons', 'algunOtroCodigo', 'otroCodigo'])
   })
 
   describe('tendencia', () => {

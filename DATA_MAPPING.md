@@ -50,6 +50,8 @@ Valor: **number**, `0` o `1` (no booleano). 25/25 claves observadas devuelven `0
 
 ## 2. GAME 2 — `seam-data-cartagena` ("Cartagena")
 
+> **Desde el 2026-11-25 Cartagena (app 3.1, `com.seam.cartagena`) usa el proyecto `seam-cartagena-97c49`** y guarda la misma forma que Cafetero y Amazonas 3.7 (sección 3): `users/{uid}/CC`, `users/{uid}/results/gameNN` con `experience` = `Dance|CastleCannons|FruitVendor`, `identificators/gameNN` y `serials/{serial}` true/false. Lo de abajo describe el proyecto viejo, que el portal ya no lee. Ver LIMITATIONS.md sección 18.
+
 Escala observada: 9 `users`, 15 `identificators`, 15 `serials`.
 
 Estructura **idéntica** a Game 1 (`cedula`, `record.gameNN`, `results.<experience>.difficult.<nivel>`, mismos nombres de campo `date/hour/difficulty/experience/score/stars/timing`). Difieren solo el **contenido**:
@@ -104,6 +106,8 @@ Mismo patrón conceptual (hash string → serial code string → `0`/`1`), pero 
 ---
 
 ## 4. Matriz comparativa
+
+> Esta matriz describe las primeras versiones de Amazonas y Cartagena. Sus proyectos nuevos (`seam-as-1601a`, `seam-cartagena-97c49`) guardan la forma de Game 3.
 
 | Capacidad / Campo | Game 1 (`seam-data-as`) | Game 2 (`seam-data-cartagena`) | Game 3 (`seam-ejecafetero-ae869`) | Normalizable |
 |---|---|---|---|---|
