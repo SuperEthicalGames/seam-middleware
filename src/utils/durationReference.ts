@@ -1,4 +1,5 @@
 import type { GameId, NormalizedDifficulty } from '@/types/game'
+import { canonicalExercise } from './labels'
 
 /**
  * Tiempo de referencia (segundos) por juego/ejercicio/dificultad, para expresar la
@@ -36,14 +37,21 @@ const AMAZONAS_DURATION_REFERENCE: Record<string, DifficultyDurationTable> = {
   exercise3: { easy: 270, medium: 210, hard: 160 },
 }
 
-/** Cartagena: 1 solo minijuego (Danza), misma duración de referencia sin importar la dificultad. */
-const CARTAGENA_DURATION_REFERENCE_SECONDS = 122
+/**
+ * Cartagena. Los dos módulos nuevos de la 3.1 usan el reloj de cada nivel, como Cafetero (assets `Castle cannons settings` y `Fruit vendor settings`
+ * del juego, 2026-11-27). La Danza no tiene referencia: dura lo que dura su canción (122,4 s en la 3.1; el juego no da puntos por velocidad,
+ * `TimePoints` 0), así que contra los 122 s de la hoja toda victoria salía con 0-2 % de velocidad — no mide nada del paciente.
+ */
+const CARTAGENA_DURATION_REFERENCE: Record<string, DifficultyDurationTable> = {
+  CastleCannons: { easy: 420, medium: 420, hard: 400 },
+  FruitVendor: { easy: 300, medium: 300, hard: 300 },
+}
 
 export function getDurationReference(game: GameId, experience: string | null, difficulty: NormalizedDifficulty): number | null {
   if (!experience) return null
   if (game === 'game3') return CAFETERO_DURATION_REFERENCE[experience]?.[difficulty] ?? null
   if (game === 'game1') return AMAZONAS_DURATION_REFERENCE[experience]?.[difficulty] ?? null
-  if (game === 'game2') return CARTAGENA_DURATION_REFERENCE_SECONDS
+  if (game === 'game2') return CARTAGENA_DURATION_REFERENCE[canonicalExercise(experience)]?.[difficulty] ?? null
   return null
 }
 

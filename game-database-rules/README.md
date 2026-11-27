@@ -33,7 +33,7 @@ podría leer ni activar seriales.
 4. Se verifica en cada proyecto (Firebase Console → Realtime Database → uso/registros)
    que el tráfico real ya llega autenticado — sin escrituras nuevas sin `auth.uid`.
 5. Recién ahí, se publica el archivo correspondiente de esta carpeta en **Rules** de
-   cada proyecto (`seam-data-as`, `seam-data-cartagena`, `seam-ejecafetero-ae869` — este último antes `seam-data-game`) desde su
+   cada proyecto (`seam-as-1601a`, `seam-cartagena-97c49`, `seam-ejecafetero-ae869` — antes `seam-data-as`, `seam-data-cartagena` y `seam-data-game`) desde su
    propia Firebase Console — cada proyecto es independiente, no hay un solo `firebase
    deploy` que los cubra a los 3 (ni siquiera al que sí gestiona este repo, que solo
    apunta al proyecto central `seam-middleware`, ver `firebase.json`).
@@ -53,3 +53,7 @@ Los tres archivos incluyen, idénticos, `owners`, `admins` y `adminRequests`: qu
 ## Amazonas 3.7: el mismo modelo que Cafetero (2026-10-19)
 
 `amazonas.rules.json` es ahora **casi el mismo archivo que `cafetero.rules.json`**: la única diferencia es el patrón de `experience` (`RiverFish|DrinkWater|MemoryGame` más el viejo `exercise1..9` en lugar de `Coffee…`). Los dos aceptan `stars` (0 a 3), `idleSeconds`, `fullScoreSeconds` y `offlineAccessKey`. Estado a 2026-10-26: las dos están publicadas tal cual en `seam-as-1601a` (con los nombres nuevos de Amazonas 3.8.0) y `seam-ejecafetero-ae869` (con `stars`); una Rule nueva que el juego necesite hay que publicarla ANTES de instalar su versión, porque las anteriores rechazan el intento completo por el campo desconocido. Antes de publicar, descarga las Rules vigentes del proyecto y compáralas con el archivo del repo: pueden ir por delante. Los datos son `users/{uid}/CC` y `users/{uid}/results/gameNN`; ya no existen `cedula`, `record` ni `results/{ejercicio}/difficult` en las cuentas nuevas. Sigue siendo el mismo archivo que `firebase/database.rules.json` del repositorio `SEAM-Amazonas`.
+
+## Cartagena 3.1: el mismo modelo, en el proyecto nuevo (2026-11-27)
+
+`cartagena.rules.json` ya no es la versión mínima: es `amazonas.rules.json` con el patrón de `experience` = `Dance|CastleCannons|FruitVendor`, para el proyecto nuevo `seam-cartagena-97c49` (app 3.1, `com.seam.cartagena`). La versión mínima no tenía `meta`, así que con ella ningún visor nuevo podía registrarse. `Game2Adapter.rules.test.ts` la prueba en el emulador. **No está publicada**: el 2026-11-26 ese proyecto tenía las Rules abiertas. Antes de publicarla, la cuenta del correo raíz tiene que haber entrado al portal y confirmado su correo para Cartagena, para quedar en `owners`/`admins`; si no, el portal deja de leer Cartagena.

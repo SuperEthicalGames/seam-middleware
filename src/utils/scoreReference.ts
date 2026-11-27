@@ -76,22 +76,23 @@ type PercentInput = Pick<NormalizedSession, 'game' | 'exercise' | 'difficulty' |
  * - Cafetero, Recolección o Clasificación sin nivel reconocido: no se sabe contra qué máximo medirlo;
  * - minijuego de Cafetero desconocido.
  *
- * Amazonas y Cartagena puntúan en 0-100 por código, igual que `scoreToPercent`.
+ * Desde el modelo 3, en los tres juegos, el propio resultado trae `maxScore` y se mide contra él: el sistema unificado de Amazonas y Cartagena puntúa
+ * sobre 1000, no sobre 100. Sin `maxScore` (partidas anteriores), Amazonas y Cartagena puntúan en 0-100 por código, igual que `scoreToPercent`.
  *
  * Se usa para analizar el rendimiento. Las estrellas estimadas siguen usando `scoreToPercent`.
  */
 export function sessionScorePercent(s: PercentInput): number | null {
   if (s.score === null) return null
 
-  if (s.game !== 'game3') return scoreToPercent(s.game, s.exercise, s.score)
-
-  if (s.exercise === 'CoffeeWash' && (s.scoreModel ?? 1) < WASH_SCORE_MODEL_WITH_FAULTS) return null
-
-  // Modelo 3: el propio resultado dice cuál era el mejor puntaje de su nivel (los tres módulos que antes puntuaban sobre 1000 ahora suman bonus de tiempo)
+  // Modelo 3: el propio resultado dice cuál era el mejor puntaje de su nivel (los tres módulos de Cafetero que antes puntuaban sobre 1000 ahora suman bonus de tiempo)
   const savedMax = s.breakdown?.maxScore ?? null
   if ((s.scoreModel ?? 1) >= SCORE_MODEL_WITH_MAX_SCORE && savedMax !== null && savedMax > 0) {
     return Math.max(0, Math.min(100, Math.round((s.score / savedMax) * 100)))
   }
+
+  if (s.game !== 'game3') return scoreToPercent(s.game, s.exercise, s.score)
+
+  if (s.exercise === 'CoffeeWash' && (s.scoreModel ?? 1) < WASH_SCORE_MODEL_WITH_FAULTS) return null
 
   const entry = s.exercise ? CAFETERO_MAX_SCORE[s.exercise] : undefined
   if (entry === undefined) return null

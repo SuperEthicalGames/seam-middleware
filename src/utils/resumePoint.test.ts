@@ -60,14 +60,23 @@ describe('resumePoint', () => {
     expect(resumePoint([attempt('CoffeeCollection', 'easy', false), other, unknown], 'game3')).toMatchObject({ exercise: 'CoffeeCollection', difficulty: 'easy' })
   })
 
-  it('en Amazonas y Cartagena solo informa el último módulo jugado: no guardan si se ganó, así que no decide', () => {
+  it('en Amazonas y Cartagena solo informa el último módulo jugado: el portal no conoce su regla de avance, así que no decide', () => {
     const a = makeSession({ game: 'game1', exercise: 'exercise2', difficulty: 'medium', date: '2026-09-15', hour: '08:00:00' })
     const p = resumePoint([a], 'game1')
     expect(p).toMatchObject({ kind: 'unknown', exercise: 'exercise2', difficulty: 'medium' })
-    expect(explainResume(p)).toMatch(/no guarda si se ganó/)
+    expect(explainResume(p)).toMatch(/no decide dónde continúa/)
     // Cartagena: el mismo minijuego con dos códigos distintos cuenta como uno
     const c = [makeSession({ game: 'game2', exercise: 'dance exercise', difficulty: 'easy', date: '2025-01-23' }), makeSession({ game: 'game2', exercise: 'exercisedance', difficulty: 'hard', date: '2025-08-19' })]
     expect(resumePoint(c, 'game2')).toMatchObject({ kind: 'unknown', exercise: 'exercisedance', difficulty: 'hard', attempts: 1 })
+  })
+
+  it('Cartagena 3.1: el recorrido empieza por la danza y reconoce los dos módulos nuevos', () => {
+    expect(resumePoint([], 'game2')).toMatchObject({ kind: 'start', exercise: 'exercisedance', difficulty: 'easy' })
+    const c = [
+      makeSession({ game: 'game2', exercise: 'Dance', difficulty: 'easy', date: '2026-11-26', hour: '10:00:00' }),
+      makeSession({ game: 'game2', exercise: 'FruitVendor', difficulty: 'medium', date: '2026-11-26', hour: '10:20:00' }),
+    ]
+    expect(resumePoint(c, 'game2')).toMatchObject({ kind: 'unknown', exercise: 'FruitVendor', difficulty: 'medium' })
   })
 
   it('no mezcla partidas de otro juego', () => {

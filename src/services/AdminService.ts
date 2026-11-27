@@ -47,7 +47,7 @@ export interface CreateNewAdminParams {
 
 export interface CreateNewAdminResult extends AuditResult {
   profile: AdminProfile
-  /** Qué pasó en la base de cada juego que exige administradores (Cafetero hoy; Amazonas y Cartagena cuando lo activen) */
+  /** Qué pasó en la base de cada juego que exige administradores (hoy los tres: Amazonas, Cartagena y Cafetero) */
   games: ProvisionOutcome[]
   /** Se devuelve una sola vez para que quien crea la cuenta la comparta por un canal seguro. */
   temporaryPassword: string

@@ -24,9 +24,20 @@ describe('getDurationReference', () => {
     expect(getDurationReference('game1', 'exercise2', 'hard')).toBe(160)
   })
 
-  it('Cartagena usa la misma referencia sin importar la dificultad (1 solo minijuego)', () => {
-    expect(getDurationReference('game2', 'exercisedance', 'easy')).toBe(122)
-    expect(getDurationReference('game2', 'exercisedance', 'hard')).toBe(122)
+  it('la Danza de Cartagena no tiene referencia de velocidad: dura lo que su canción (122,4 s), con el código del legado y con el del remake', () => {
+    expect(getDurationReference('game2', 'exercisedance', 'easy')).toBeNull()
+    expect(getDurationReference('game2', 'Dance', 'medium')).toBeNull()
+    expect(durationToPercent('game2', 'exercisedance', 'hard', 120.13)).toBeNull()
+  })
+
+  it('los dos módulos nuevos de Cartagena 3.1 siguen el reloj de cada nivel del juego', () => {
+    expect(getDurationReference('game2', 'CastleCannons', 'easy')).toBe(420)
+    expect(getDurationReference('game2', 'CastleCannons', 'hard')).toBe(400)
+    expect(getDurationReference('game2', 'FruitVendor', 'medium')).toBe(300)
+  })
+
+  it('Cartagena ya no da una referencia a un módulo que no conoce', () => {
+    expect(getDurationReference('game2', 'algunOtroCodigo', 'easy')).toBeNull()
   })
 
   it('devuelve null para un ejercicio o dificultad no reconocidos, sin adivinar', () => {

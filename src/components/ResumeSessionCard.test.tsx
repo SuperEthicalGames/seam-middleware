@@ -54,7 +54,7 @@ describe('ResumeSessionCard', () => {
     const text = await render([makeSession({ game: 'game1', exercise: 'exercise3', difficulty: 'hard', date: '2026-09-15', hour: '08:04:01' })], 'game1')
     expect(text).toContain('Último módulo jugado')
     expect(text).toContain('Juego de memoria – Avanzado')
-    expect(text).toContain('no guarda si se ganó')
+    expect(text).toContain('no decide dónde continúa')
     expect(text).not.toContain('Debe empezar en')
   })
 

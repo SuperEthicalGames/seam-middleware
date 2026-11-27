@@ -1,35 +1,32 @@
 import { initializeApp } from 'firebase/app'
 import { getDatabase } from 'firebase/database'
-import { createAnonAuthGate } from './anonAuthGate'
 import { createGameLink } from './gameLink'
 import { GAME_BOOTSTRAP_OWNER_EMAIL, GAME_MANAGES_ADMINS, GAME_REQUIRES_ADMIN } from '@/config/games'
 
 /**
- * Firebase del Juego 2 — Cartagena (seam-data-cartagena). Ver nota en game1.ts: mismo
- * motivo para inicializar solo con databaseURL hasta ahora, y mismo plan de cierre de
- * Rules (LIMITATIONS.md sección 1) — reemplazar la config de abajo con los valores
- * reales de este proyecto activa la sesión anónima automáticamente, sin más cambios.
+ * Firebase del Juego 2 — Cartagena (seam-cartagena-97c49). Config real tomada del google-services.json de la app de Unity (package com.seam.cartagena,
+ * 2026-11-25).
+ *
+ * Desde la versión 3.1 (el remake de Cartagena) la app usa este proyecto nuevo en lugar de `seam-data-cartagena` (package com.agencycic.cartagena), y
+ * guarda los datos y los seriales con el mismo sistema que Amazonas y Cafetero (ver DATA_MAPPING.md): `users/{uid}/CC`, `users/{uid}/results/gameNN` con
+ * `experience` = `Dance|CastleCannons|FruitVendor`, `identificators/gameNN` y `serials/{serial}` true/false. Las Rules (game-database-rules/cartagena.rules.json)
+ * son las de Amazonas salvo el nombre del ejercicio. El historial del proyecto viejo no pasa a este.
+ *
+ * Igual que Amazonas y Cafetero, aquí NO se usa sesión anónima: el portal inicia sesión en este proyecto con el mismo correo y contraseña del administrador
+ * (ver AuthContext.signIn), y lo resuelve `gameLink.ts`, igual para los tres juegos.
  */
 export const GAME2_FIREBASE_CONFIG = {
-  apiKey: 'AIzaSyCdCGOGew0iBi0WvBwB9VueSQvE7sRyAS8',
-  authDomain: 'seam-data-cartagena.firebaseapp.com',
-  projectId: 'seam-data-cartagena',
-  databaseURL: 'https://seam-data-cartagena-default-rtdb.firebaseio.com',
+  apiKey: 'AIzaSyBlee4R-YPNS1W5mINgNha7D_pr7_tvgTk',
+  authDomain: 'seam-cartagena-97c49.firebaseapp.com',
+  projectId: 'seam-cartagena-97c49',
+  databaseURL: 'https://seam-cartagena-97c49-default-rtdb.firebaseio.com',
 }
 
 const HAS_REAL_CONFIG = !GAME2_FIREBASE_CONFIG.apiKey.startsWith('PENDIENTE_')
 
 export const game2App = initializeApp(GAME2_FIREBASE_CONFIG, 'game2')
 export const game2Db = getDatabase(game2App)
-// Sin sesión anónima: las Rules de este juego siguen abiertas y leerlo no necesita sesión. Que ya haya configuración real (para crear las cuentas
-// de administrador) no debe cambiar cómo se lee. Cuando se cierren sus Rules, el enlace de administrador (GAME_REQUIRES_ADMIN) pone la sesión.
-export const ensureGame2Auth = createAnonAuthGate(game2App, false)
 
-/**
- * Enlace de administrador de Cartagena. `requiresAdmin` sigue en false (`GAME_REQUIRES_ADMIN`): mientras las Rules de este proyecto sean las actuales (`auth != null`)
- * el portal lo consulta con la sesión anónima de arriba y no pide ninguna conexión extra. Cuando se publiquen las Rules con la capa de
- * administradores (game-database-rules/*.rules.json) y la configuración de arriba sea la real, cambiar a true en `GAME_REQUIRES_ADMIN` (src/config/games.ts).
- */
 export const game2Link = createGameLink({
   gameId: 'game2',
   displayName: 'Cartagena',
@@ -41,3 +38,6 @@ export const game2Link = createGameLink({
   manageAdmins: GAME_MANAGES_ADMINS.game2,
   bootstrapOwnerEmail: GAME_BOOTSTRAP_OWNER_EMAIL,
 })
+
+/** El adaptador del Juego 2 lo llama antes de cada lectura o escritura: lanza un PortalError con el motivo concreto si falta la conexión de administrador */
+export const ensureGame2Auth = () => game2Link.ensure()

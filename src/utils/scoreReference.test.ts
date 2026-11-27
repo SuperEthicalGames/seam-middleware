@@ -99,8 +99,13 @@ describe('sessionScorePercent', () => {
     expect(s({ exercise: null })).toBeNull()
   })
 
-  it('Amazonas y Cartagena siguen puntuando sobre 100', () => {
+  it('Amazonas y Cartagena siguen puntuando sobre 100 en las partidas sin maxScore', () => {
     expect(s({ game: 'game1', exercise: 'exercise1', score: 66 })).toBe(66)
     expect(s({ game: 'game2', exercise: 'exercisedance', score: 999 })).toBe(100)
+  })
+
+  it('con el sistema unificado (modelo 3 o más, maxScore guardado) Amazonas y Cartagena se miden contra su máximo de 1000', () => {
+    expect(s({ game: 'game2', exercise: 'CastleCannons', score: 820, scoreModel: 4, breakdown: { maxScore: 1000 } })).toBe(82)
+    expect(s({ game: 'game1', exercise: 'RiverFish', score: 450, scoreModel: 4, breakdown: { maxScore: 1000 } })).toBe(45)
   })
 })

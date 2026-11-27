@@ -20,3 +20,17 @@ describe('ejercicios de Amazonas con el nombre nuevo', () => {
     expect(formatExerciseLabel('MemoryGame')).toBe('Juego de memoria')
   })
 })
+
+describe('módulos de Cartagena 3.1 (proyecto seam-cartagena-97c49)', () => {
+  it('agrupa la Danza del remake con la del legado', () => {
+    expect(canonicalExercise('Dance')).toBe('exercisedance')
+    expect(formatExerciseLabel('Dance')).toBe(formatExerciseLabel('exercisedance'))
+  })
+
+  it('los dos módulos nuevos tienen nombre propio y no se agrupan con nada', () => {
+    expect(canonicalExercise('CastleCannons')).toBe('CastleCannons')
+    expect(canonicalExercise('FruitVendor')).toBe('FruitVendor')
+    expect(formatExerciseLabel('CastleCannons')).toBe('Cañones del castillo')
+    expect(formatExerciseLabel('FruitVendor')).toBe('Frutas de la palenquera')
+  })
+})

@@ -17,6 +17,10 @@ const EXERCISE_LABELS: Record<string, string> = {
   MemoryGame: 'Juego de memoria',
   exercisedance: 'Danza',
   'dance exercise': 'Danza',
+  // Desde Cartagena 3.1 (el remake, proyecto seam-cartagena-97c49) la app escribe el nombre del módulo: el baile y dos juegos nuevos
+  Dance: 'Danza',
+  CastleCannons: 'Cañones del castillo',
+  FruitVendor: 'Frutas de la palenquera',
   CoffeeWash: 'Lavado del café',
   CoffeeClassification: 'Clasificación del café',
   CoffeeCollection: 'Recolección del café',
@@ -39,6 +43,8 @@ export function formatExerciseLabel(raw: string | null): string {
  */
 const EXERCISE_ALIASES: Record<string, string> = {
   'dance exercise': 'exercisedance',
+  // Cartagena 3.1: el baile del remake es el mismo minijuego que el del legado
+  Dance: 'exercisedance',
   // Amazonas: las sesiones con el nombre nuevo (3.8.0 en adelante) se agrupan con las de exercise1..3 (APK hasta la 3.7.1)
   RiverFish: 'exercise1',
   DrinkWater: 'exercise2',
@@ -52,12 +58,14 @@ export function canonicalExercise(raw: string): string {
 /**
  * Orden fijo pedido por el cliente para las tablas de rendimiento por ejercicio de
  * ciertos juegos — el flujo real del juego (Cafetero: recolectar → transportar →
- * clasificar → lavar → elaborar) o el orden de los minijuegos (Amazonas), no la
+ * clasificar → lavar → elaborar) o el orden de los minijuegos (Amazonas, Cartagena), no la
  * cantidad de sesiones ni el orden en que llegan los datos. Un juego que no aparece
- * aquí (Cartagena, que solo tiene 1 minijuego) sigue ordenado por cantidad de sesiones
- * — ver sortByExerciseOrder en exercisePerformance.ts, el único lugar que lo usa.
+ * aquí sigue ordenado por cantidad de sesiones — ver sortByExerciseOrder en
+ * exercisePerformance.ts, el único lugar que lo usa.
  */
 export const FIXED_EXERCISE_ORDER: Partial<Record<GameId, string[]>> = {
   game1: ['exercise1', 'exercise2', 'exercise3'],
+  // Cartagena 3.1: el orden del recorrido de la app (Region_Cartagena.asset): el baile, los cañones, la palenquera
+  game2: ['exercisedance', 'CastleCannons', 'FruitVendor'],
   game3: ['CoffeeCollection', 'CoffeeTransportation', 'CoffeeClassification', 'CoffeeWash', 'CoffeeElaboration'],
 }
